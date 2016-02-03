@@ -11,10 +11,12 @@ SYSTEM_MODE(AUTOMATIC);
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 String jsonString = NULL; // the established JSON string
-
+jsmntok_t jsmnTokens[100]; //JSMN Tokens (a conversion of JSON)
+int i = 0;
+    
 void setup()
 {
-    Particle.function("setupStructure", setupStructure);
+    bool success = Particle.function("setupStruct", setupStructure);
     
     strip.begin();
     strip.show(); // Initialize all pixels to 'off'
@@ -25,7 +27,7 @@ void setup()
 
 void loop()
 {
-    goIntoStandby();
+    // goIntoStandby();
     
     // strip.setPixelColor(0, strip.Color(0, 255, 0));
     // strip.setPixelColor(23, strip.Color(255, 0, 0));
@@ -42,54 +44,56 @@ int setupStructure(String args){
     jsmn_parser parser; // creates the parser
     jsmn_init(&parser); // initializes the parser
     int tokenArraySize = 0;
+    Particle.publish("received", args);
+    strip.setPixelColor(i++, strip.Color(255, 0, 0));
+    strip.show();
     
     if(args.startsWith("{\"begin\":\"begin\""))
     {
         jsonString = args;
-        strip.setPixelColor(1, strip.Color(255, 0, 0));
-        strip.show();
-    }else if(args.lastIndexOf("}") != -1){
-        // it found the closing '}' so double check 
+    }else{
         jsonString += args;
-        if(jsonString.endsWith("\"end\":\"end\"}"))
+        if(args.endsWith("\"end\":\"end\"}"))
         {
+            Particle.publish("received","endReceived");
             // parse it and set up the universal button as such
-            strip.setPixelColor(2, strip.Color(255, 0, 0));
-            strip.show();
             
-            tokenArraySize = jsmn_parse(&parser, jsonString, null, 0); // hands back the required token allocation size
-        	if (tokenArraySize != JSMN_ERROR_INVAL ||
-        	    tokenArraySize != JSMN_ERROR_NOMEM ||
-        	    tokenArraySize != JSMN_ERROR_PART)
+            tokenArraySize = jsmn_parse(&parser, jsonString, jsmnTokens, 100); // hands back the required token allocation size
+            char str[63];
+            sprintf(str, "tokenArraySize: %d", tokenArraySize);
+        	Particle.publish("parser", str);
+        	    
+        	if (tokenArraySize >= 0)
         	{
-        	    jsmntok_t jsmnTokens[tokenArraySize]; //JSMN Tokens (a conversion of JSON)
-        	    int result = jsmn_parse(&parser, jsonString, jsmnTokens, tokenArraySize);
-        	    if(result == JSMN_SUCCESS)
+        	    Particle.publish("parser", "failed");
+        	    // parsed successfuly
+        	    for (int i = 0; i < tokenArraySize; i++) 
         	    {
-        	        // parsed successfuly
-        	        for (int i = 0; i < tokenArraySize; i++) 
-        	        {
-                		switch(jsmnTokens[i].type){
-                		    case JSMN_OBJECT:
-                		        break;
-                		    case JSMN_ARRAY:
-                		        break;
-                		    case JSMN_STRING:
-                		        break;
-                		    case JSMN_PRIMITIVE:
-                		        break;
-                		    default:
-                		        // undefined
-                		        return -1;
-                		        break;
-                		}
+                	switch(jsmnTokens[i].type){
+                	    case JSMN_OBJECT:
+                	        Particle.publish("parser", "object");
+                	        break;
+                	    case JSMN_ARRAY:
+                	        Particle.publish("parser", "array");
+                	        break;
+                	    case JSMN_STRING:
+                	        Particle.publish("parser", "string");
+                	        break;
+                	    case JSMN_PRIMITIVE:
+                	        Particle.publish("parser", "primitive");
+                	        //  't', 'f' - boolean
+                            //  'n' - null
+                            //  '-', '0'..'9' - integer
+                	        break;
+                	    default:
+                	        // undefined
+                	        return -1;
+                	        break;
                 	}
-            	}else {
-            	    // parse failed
-            	    return -1;
-            	}
-        	}else {
+                }
+            }else {
         	    // parse failed
+        	    Particle.publish("parser", "failed");
         	    return -1;
         	}
         }   

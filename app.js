@@ -12,24 +12,21 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var YamahaAPI = require("yamaha-nodejs");
 var Particle = require('spark');
+
 // when stringified, cannot be larger than 63 characters
 var settings = {
-  'begin':'begin',
-  // 'Receiver':{
-  //   'power':['on','off'],
-  //   'volume':'int:-500,0',
-  //   'mute':['on','off'],
-  //   'input':['Pandora']
-  // },
-  'end':'end'
+  "begin":"begin",
+  "Receiver":{
+    "power":["on","off"],
+    "volume":"int:-500,0",
+    "mute":["on","off"],
+    "input":["Pandora"]
+  },
+  "end":"end"
 };
 var stringSettings = JSON.stringify(settings);
 console.log('stringSettings: ', stringSettings);
 console.log('settings arg length: ', stringSettings.length);
-if(stringSettings.length > 63)
-{
-  throw "settings arg exceeded limit";
-}
 
 env(__dirname + '/.env');
 
@@ -58,23 +55,30 @@ console.log(process.env.PARTICLE_ID);
 Particle.login({ username: process.env.PARTICLE_USER, password:  process.env.PARTICLE_PASSWORD}, function (err, body) {
   Particle.getDevice( process.env.PARTICLE_ID, function (err, device)
   {
-    if(err != null || device == null)
+    if(device != null && err == null)
     {
       particleDevice = device;
-      console.log(particleDevice);
-      
-      // device.callFunction('setupStructure', JSON.stringify(settings), function(err, data)
-      // {
-      //   if (err) {
-      //     console.log('An error occurred:', err);
-      //   } else {
-      //     console.log('Function called succesfully:', data);
-      //   }
-      // });
-      
-      particleDevice.subscribe('test', function(data) {
+      // console.log(particleDevice);
+     
+      particleDevice.subscribe('received', function(data) {
         console.log("Event: " + data);
       });
+      
+      // chunk of the call request in parts
+      var index = 0;
+      for (var index = 0 ; index < stringSettings.length; index += 63)
+      {
+        var settingsData = stringSettings.substring(index, index+63);
+        console.log(settingsData + '~' + settingsData.length);  
+        device.callFunction('setupStruct', settingsData, function(err, data)
+        {
+          if (err) {
+            console.log('An error occurred:', err);
+          } else {
+            console.log('Function called succesfully:', data);
+          }
+        });
+      }
     }else{
       console.log('particle device could not be found');
     }
