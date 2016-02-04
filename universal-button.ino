@@ -9,35 +9,46 @@ SYSTEM_MODE(AUTOMATIC);
 #define PIXEL_COUNT 24
 #define PIXEL_TYPE WS2812B
 
-/* Rotary encoder */
-// #define ENC_A 14
-// #define ENC_B 15
-#define ENC_SWITCH_PIN D4 //push button switch
+void doEncoderA();
+void doEncoderB();
 
-String beginString = "begin--";
-String endString = "--end";
-
+// Button Globals
+#define ENC_BUTTON_PIN D4 //push button switch
 int buttonState;             // the current reading from the input pin
 int lastButtonState = HIGH;   // the previous reading from the input pin
-
-// the following variables are long's because the time, measured in miliseconds,
-// will quickly become a bigger number than can be stored in an int.
-long lastDebounceTime = 0;  // the last time the output pin was toggled
+long lastButtonDebounceTime = 0;  // the last time the output pin was toggled
 long debounceDelay = 100;    // the debounce time; increase if the output flickers
 
+// Neopixel Globals
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
+
+// Setup Globals
 String jsonString = NULL; // the established JSON string
 jsmntok_t jsmnTokens[100]; //JSMN Tokens (a conversion of JSON)
 int i = 0;
-    
+String beginString = "begin--";
+String endString = "--end";
+
+// Rotary Encoder Globals
+#define ENC_A A0
+#define ENC_B A1
+volatile bool A_set = false;
+volatile bool B_set = false;
+volatile int encoderPos = 0;
+int prevPos = 0;
+int value = 0;
+long lastEncoderDebounceTime = 0;
+
 void setup()
 {
     bool success = Particle.function("setupStruct", setupStructure);
     
-    // pinMode(ENC_A, INPU
-    // pinMode(ENC_B, INPUT);
-    // digitalWrite(ENC_B, HIGH);
-    pinMode(ENC_SWITCH_PIN, INPUT_PULLUP);
+    pinMode(ENC_A, INPUT_PULLUP);
+    pinMode(ENC_B, INPUT_PULLUP);
+    attachInterrupt(ENC_A, doEncoderA, CHANGE);
+    attachInterrupt(ENC_B, doEncoderB, CHANGE);
+  
+    pinMode(ENC_BUTTON_PIN, INPUT_PULLUP);
     
     strip.begin();
     strip.show(); // Initialize all pixels to 'off'
@@ -55,32 +66,28 @@ void loop()
     // strip.setPixelColor(23, strip.Color(255, 0, 0));
     // strip.show();
     
-    // static uint8_t counter = 0;      //this variable will be changed by encoder input
-    // int8_t tmpdata;
-    // 
-    // tmpdata = read_encoder();
-    // if( tmpdata ) {
-    //     char str[63];
-    //     sprintf(str, "%d", counter);
-    //     Particle.publish("encoder", str);
-    //     counter += tmpdata;
-    // }
+    if (prevPos != encoderPos) {
+    //     lastEncoderDebounceTime = millis();
+    //     if ((millis() - lastEncoderDebounceTime) > debounceDelay) {
+            prevPos = encoderPos;
+            char str[63];
+            sprintf(str, "%d", encoderPos);
+            Particle.publish("encoderPos",str);
+        // }
+    }
     
-    int reading = digitalRead(ENC_SWITCH_PIN);
+    int reading = digitalRead(ENC_BUTTON_PIN);
     // If the switch changed, due to noise or pressing:
     if (reading != lastButtonState) {
       // reset the debouncing timer
-      lastDebounceTime = millis();
+      lastButtonDebounceTime = millis();
     }
-    if ((millis() - lastDebounceTime) > debounceDelay) {
+    if ((millis() - lastButtonDebounceTime) > debounceDelay) {
       // whatever the reading is at, it's been there for longer
       // than the debounce delay, so take it as the actual current state:
-    
       // if the button state has changed:
       if (reading != buttonState) {
         buttonState = reading;
-    
-        // only toggle the LED if the new button state is HIGH
         if (buttonState == LOW) {
           Particle.publish("button", "pressed");
         }
@@ -155,4 +162,23 @@ int setupStructure(String args){
         }   
     }
     return 1;
+}
+
+void doEncoderA(){
+  if( digitalRead(ENC_A) != A_set ) {  // debounce once more
+    A_set = !A_set;
+    // adjust counter + if A leads B
+    if ( A_set && !B_set ) 
+      encoderPos += 1;
+  }
+}
+
+// Interrupt on B changing state, same as A above
+void doEncoderB(){
+   if( digitalRead(ENC_B) != B_set ) {
+    B_set = !B_set;
+    //  adjust counter - 1 if B leads A
+    if( B_set && !A_set ) 
+      encoderPos -= 1;
+  }
 }
