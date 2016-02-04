@@ -9,11 +9,13 @@ SYSTEM_MODE(AUTOMATIC);
 #define PIXEL_COUNT 24
 #define PIXEL_TYPE WS2812B
 
-
 /* Rotary encoder */
 // #define ENC_A 14
 // #define ENC_B 15
 #define ENC_SWITCH_PIN D4 //push button switch
+
+String beginString = "begin--";
+String endString = "--end";
 
 int buttonState;             // the current reading from the input pin
 int lastButtonState = HIGH;   // the previous reading from the input pin
@@ -100,14 +102,16 @@ int setupStructure(String args){
     strip.setPixelColor(i++, strip.Color(255, 0, 0));
     strip.show();
     
-    if(args.startsWith("{\"begin\":\"begin\""))
+    if(args.startsWith(beginString))
     {
         jsonString = args;
     }else{
         jsonString += args;
-        if(args.endsWith("\"end\":\"end\"}"))
+        if(args.endsWith(endString))
         {
+            String jsonStringData = jsonString.substring(beginString.length(), jsonString.length() - endString.length());
             Particle.publish("received","endReceived");
+            Particle.publish("receivedString", jsonStringData);
             // parse it and set up the universal button as such
             
             tokenArraySize = jsmn_parse(&parser, jsonString, jsmnTokens, 100); // hands back the required token allocation size

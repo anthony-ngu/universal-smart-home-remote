@@ -15,16 +15,14 @@ var Particle = require('spark');
 
 // when stringified, cannot be larger than 63 characters
 var settings = {
-  "begin": "begin",
   "Receiver": {
     "power": ["on", "off"],
     "volume": "-500,0,10", // min, max, increments
     "mute": ["on", "off"],
     "input": ["Pandora"]
-  },
-  "end": "end"
+  }
 };
-var stringSettings = JSON.stringify(settings);
+var stringSettings = 'begin--' + JSON.stringify(settings) + '--end';
 console.log('stringSettings: ', stringSettings);
 console.log('settings arg length: ', stringSettings.length);
 
