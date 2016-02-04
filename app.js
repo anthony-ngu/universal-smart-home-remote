@@ -18,7 +18,7 @@ var settings = {
   "begin": "begin",
   "Receiver": {
     "power": ["on", "off"],
-    "volume": "int:-500,0",
+    "volume": "-500,0,10", // min, max, increments
     "mute": ["on", "off"],
     "input": ["Pandora"]
   },
