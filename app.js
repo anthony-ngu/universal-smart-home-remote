@@ -60,6 +60,10 @@ Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PART
         console.log("Event: " + data);
       });
       
+      particleDevice.subscribe('setupInit', function(data){
+        var index = 0;
+        SendSettingsData(device, index);
+      });
       // chunk the settingsData in parts and send it
       var index = 0;
       SendSettingsData(device, index);

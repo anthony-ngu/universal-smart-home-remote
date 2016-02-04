@@ -44,6 +44,7 @@ void setup()
     strip.setBrightness(10); // Stops the LEDs from being blinding
     
     jsonString = ""; // the established JSON string
+    Particle.publish("setupInit");
 }
 
 void loop()
@@ -98,7 +99,7 @@ int setupStructure(String args){
     jsmn_parser parser; // creates the parser
     jsmn_init(&parser); // initializes the parser
     int tokenArraySize = 0;
-    Particle.publish("received", args);
+    // Particle.publish("received", args);
     strip.setPixelColor(i++, strip.Color(255, 0, 0));
     strip.show();
     
@@ -110,33 +111,32 @@ int setupStructure(String args){
         if(args.endsWith(endString))
         {
             String jsonStringData = jsonString.substring(beginString.length(), jsonString.length() - endString.length());
-            Particle.publish("received","endReceived");
-            Particle.publish("receivedString", jsonStringData);
+            // Particle.publish("received","endReceived");
+            // Particle.publish("receivedString", jsonStringData);
             // parse it and set up the universal button as such
             
-            tokenArraySize = jsmn_parse(&parser, jsonString, jsmnTokens, 100); // hands back the required token allocation size
-            char str[63];
-            sprintf(str, "tokenArraySize: %d", tokenArraySize);
-        	Particle.publish("parser", str);
+            tokenArraySize = jsmn_parse(&parser, jsonStringData, jsmnTokens, 100); // hands back the required token allocation size
+            // char str[63];
+            // sprintf(str, "tokenArraySize: %d", tokenArraySize);
+            // Particle.publish("parser", str);
         	    
         	if (tokenArraySize >= 0)
         	{
-        	    Particle.publish("parser", "failed");
         	    // parsed successfuly
-        	    for (int i = 0; i < tokenArraySize; i++) 
+        	    for (int i = 0; i < 100; i++) 
         	    {
                 	switch(jsmnTokens[i].type){
                 	    case JSMN_OBJECT:
-                	        Particle.publish("parser", "object");
+                	        // Particle.publish("parser", "object");
                 	        break;
                 	    case JSMN_ARRAY:
-                	        Particle.publish("parser", "array");
+                	        // Particle.publish("parser", "array");
                 	        break;
                 	    case JSMN_STRING:
-                	        Particle.publish("parser", "string");
+                	        // Particle.publish("parser", "string");
                 	        break;
                 	    case JSMN_PRIMITIVE:
-                	        Particle.publish("parser", "primitive");
+                	        // Particle.publish("parser", "primitive");
                 	        //  't', 'f' - boolean
                             //  'n' - null
                             //  '-', '0'..'9' - integer
