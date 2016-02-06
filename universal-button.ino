@@ -103,9 +103,8 @@ void loop()
     //     lastEncoderDebounceTime = millis();
     //     if ((millis() - lastEncoderDebounceTime) > debounceDelay) {
             prevPos = encoderPos;
-            char str[63];
-            sprintf(str, "%d", encoderPos);
-            Particle.publish("encoderPos",str);
+            infoText = String::format("encoder: %d", encoderPos);
+            // Particle.publish("encoderPos",str);
         // }
     }
     int reading = digitalRead(ENC_BUTTON_PIN);
@@ -180,19 +179,40 @@ int setupStructure(String args)
         	    // parsed successfuly
         	    for (int i = 0; i < 100; i++) 
         	    {
+        	        String objectString = jsonStringData.substring(jsmnTokens[i].start, jsmnTokens[i].end);
+        	        // oled.clear(PAGE);
+        	        // oled.setCursor(0,0);
+                    // oled.print(objectString);
+                    // oled.display();       // Refresh the display
+                    // delay(2000);
                 	switch(jsmnTokens[i].type){
                 	    case JSMN_OBJECT:
                     	    {
-                    	        // Particle.publish("parser", "object");
-                    	        String name = "Receiver";
-                    	       // MenuItem menuObject = MenuItem(name, MENU_ARRAY, inputMenuArray, 2);
+                    	        int firstIndex = objectString.indexOf("\"");
+                    	        int secondIndex = objectString.indexOf("\"", firstIndex+1);
+                    	        String nameStr = objectString.substring(firstIndex+1, secondIndex);
+                    	        oled.clear(PAGE);
+                    	        oled.setCursor(0,0);
+                                oled.print("MENU_ARRAY ");
+                                oled.print(jsmnTokens[i].size);
+                                oled.print(objectString);
+                                oled.display();       // Refresh the display
+                                delay(2000);
+                    	        // MenuItem menuObject = MenuItem(nameStr, MENU_ARRAY, inputMenuArray, 2);
                     	        break;
                     	    }
                 	    case JSMN_ARRAY:
                     	    {
                     	        // Particle.publish("parser", "array");
-                    	        String name = "Input";
-                	            String valueArray[] = {"Pandora", "HDMI1"};
+                    	       // String name = "Input";
+                	           // String valueArray[] = {"Pandora", "HDMI1"};
+                	            oled.clear(PAGE);
+                    	        oled.setCursor(0,0);
+                                oled.print("VALUE_ARRAY ");
+                                oled.print(jsmnTokens[i].size);
+                                oled.print(objectString);
+                                oled.display();
+                                delay(2000);
                 	           // MenuItem inputValueArray = MenuItem(name, VALUE_ARRAY, valueArray, 2);
                     	        break;
                     	    }
@@ -201,13 +221,29 @@ int setupStructure(String args)
                     	        // Particle.publish("parser", "string");
                     	        // This should be an int range
                     	        // min, max, step
-                    	        String intRange = jsonStringData.substring(jsmnTokens[i].start, jsmnTokens[i].end);
-                    	        int minEndIndex = intRange.indexOf(',');
-                    	        int maxEndIndex = intRange.lastIndexOf(',');
-                    	        String min = intRange.substring(0,minEndIndex);
-                    	        String max = intRange.substring(minEndIndex,maxEndIndex);
-                    	        String step = intRange.substring(maxEndIndex);
-                    	        String name = "Volume";
+                    	        int minEndIndex = objectString.indexOf(',');
+                    	        int maxEndIndex = objectString.lastIndexOf(',');
+                    	        String min = objectString.substring(0,minEndIndex);
+                    	        String max = objectString.substring(minEndIndex+1,maxEndIndex);
+                    	        String step = objectString.substring(maxEndIndex+1);
+                    	        oled.clear(PAGE);
+                    	        oled.setCursor(0,0);
+                                
+                                
+                                if(minEndIndex < 0)
+                                {
+                                    // Not an INT_RANGE
+                                    oled.print("STRING ");
+                                    oled.print(objectString);
+                                }else{
+                                    oled.print("INT_RANGE ");
+                                    oled.print("min:"+min+"\n");
+                                    oled.print("max:"+max+"\n");
+                                    oled.print("step:"+step+"\n");
+                                }
+                               
+                                oled.display();       // Refresh the display
+                                delay(2000);
                     	       // MenuItem inputIntRange = MenuItem(name, INT_RANGE, min.toInt(), max.toInt(), step.toInt(), 2);
                     	        break;
                     	    }
