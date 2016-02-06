@@ -1,11 +1,14 @@
 #include "application.h"
+#include "SparkFunMAX17043/SparkFunMAX17043.h"
+#include "SparkFunMicroOLED/SparkFunMicroOLED.h"
+#include "math.h"
 #include "neopixel/neopixel.h"
 #include "JSMNSpark/JSMNSpark.h" // for more info on JSMN check out @ https://github.com/zserge/jsmn
 
 SYSTEM_MODE(AUTOMATIC);
 
 // IMPORTANT: Set pixel COUNT, PIN and TYPE
-#define PIXEL_PIN D6
+#define PIXEL_PIN D5
 #define PIXEL_COUNT 24
 #define PIXEL_TYPE WS2812B
 
@@ -39,33 +42,60 @@ int prevPos = 0;
 int value = 0;
 long lastEncoderDebounceTime = 0;
 
+// OLED Globals
+MicroOLED oled;
+
+// Battery Monitoring Globals
+double voltage = 0; // Variable to keep track of LiPo voltage
+double soc = 0; // Variable to keep track of LiPo state-of-charge (SOC)
+bool alert; // Variable to keep track of whether alert has been triggered
+
 void setup()
 {
     bool success = Particle.function("setupStruct", setupStructure);
     
+    // Encoder setup
     pinMode(ENC_A, INPUT_PULLUP);
     pinMode(ENC_B, INPUT_PULLUP);
     attachInterrupt(ENC_A, doEncoderA, CHANGE);
     attachInterrupt(ENC_B, doEncoderB, CHANGE);
-  
+
+    // Button setup  
     pinMode(ENC_BUTTON_PIN, INPUT_PULLUP);
     
+    // Neopixel Ring Setup
     strip.begin();
     strip.show(); // Initialize all pixels to 'off'
     strip.setBrightness(10); // Stops the LEDs from being blinding
     
+    // Set up the MAX17043 LiPo fuel gauge:
+    lipo.begin(); // Initialize the MAX17043 LiPo fuel gauge
+    // Quick start restarts the MAX17043 in hopes of getting a more accurate
+    // guess for the SOC.
+    lipo.quickStart();
+    
+    // OLED Setup
+    oled.begin();    // Initialize the OLED
+    oled.clear(ALL); // Clear the display's internal memory
+    oled.display();  // Display what's in the buffer (splashscreen)
+    delay(1000);     // Delay 1000 ms
+    oled.clear(PAGE); // Clear the buffer.
+    
+    // Info Setup
     jsonString = ""; // the established JSON string
     Particle.publish("setupInit");
 }
 
 void loop()
 {
-    // goIntoStandby();T);
+    // NeoPixel Ring
+    // goIntoStandby();
+    strip.setPixelColor(1, strip.Color(0, 0, 255));
+    strip.setPixelColor(0, strip.Color(0, 255, 0));
+    strip.setPixelColor(23, strip.Color(255, 0, 0));
+    strip.show();
     
-    // strip.setPixelColor(0, strip.Color(0, 255, 0));
-    // strip.setPixelColor(23, strip.Color(255, 0, 0));
-    // strip.show();
-    
+    // Encoder + Button
     if (prevPos != encoderPos) {
     //     lastEncoderDebounceTime = millis();
     //     if ((millis() - lastEncoderDebounceTime) > debounceDelay) {
@@ -75,7 +105,6 @@ void loop()
             Particle.publish("encoderPos",str);
         // }
     }
-    
     int reading = digitalRead(ENC_BUTTON_PIN);
     // If the switch changed, due to noise or pressing:
     if (reading != lastButtonState) {
@@ -94,6 +123,18 @@ void loop()
       }
     }
     lastButtonState = reading;
+    
+    // LiPo and Battery Display
+    voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
+    soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
+    char str[63];
+    sprintf(str, "%.2f V\n%.1f %%", voltage, soc);
+    oled.setFontType(1);  // Set font to type 1
+    oled.clear(PAGE);     // Clear the page
+    oled.setCursor(0, 0); // Set cursor to top-left
+    // Print can be used to print a string to the screen:
+    oled.print(str);
+    oled.display();       // Refresh the display
 }
 
 void goIntoStandby()
@@ -182,3 +223,24 @@ void doEncoderB(){
       encoderPos -= 1;
   }
 }
+
+// Center and print a small title
+// This function is quick and dirty. Only works for titles one
+// line long.
+void printTitle(String title, int font)
+{
+  int middleX = oled.getLCDWidth() / 2;
+  int middleY = oled.getLCDHeight() / 2;
+
+  oled.clear(PAGE);
+  oled.setFontType(font);
+  // Try to set the cursor in the middle of the screen
+  oled.setCursor(middleX - (oled.getFontWidth() * (title.length()/2)),
+                 middleY - (oled.getFontWidth() / 2));
+  // Print the title:
+  oled.print(title);
+  oled.display();
+  delay(1500);
+  oled.clear(PAGE);
+}
+
