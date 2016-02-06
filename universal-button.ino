@@ -4,6 +4,7 @@
 #include "math.h"
 #include "neopixel/neopixel.h"
 #include "JSMNSpark/JSMNSpark.h" // for more info on JSMN check out @ https://github.com/zserge/jsmn
+#include "clickButton/clickButton.h"
 #include "menuItem.h"
 
 SYSTEM_MODE(AUTOMATIC);
@@ -17,11 +18,9 @@ void doEncoderA();
 void doEncoderB();
 
 // Button Globals
-#define ENC_BUTTON_PIN D4 //push button switch
-int buttonState;             // the current reading from the input pin
-int lastButtonState = HIGH;   // the previous reading from the input pin
-long lastButtonDebounceTime = 0;  // the last time the output pin was toggled
-long debounceDelay = 100;    // the debounce time; increase if the output flickers
+const int buttonPin1 = D4;
+ClickButton button1(buttonPin1, LOW, CLICKBTN_PULLUP);
+int function = 0;
 
 // Neopixel Globals
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
@@ -64,7 +63,10 @@ void setup()
     attachInterrupt(ENC_B, doEncoderB, CHANGE);
 
     // Button setup  
-    pinMode(ENC_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(buttonPin1, INPUT_PULLUP);
+    button1.debounceTime   = 20;   // Debounce timer in ms
+    button1.multiclickTime = 250;  // Time limit for multi clicks
+    button1.longClickTime  = 1000; // time until "held-down clicks" register
     
     // Neopixel Ring Setup
     strip.begin();
@@ -107,24 +109,14 @@ void loop()
             // Particle.publish("encoderPos",str);
         // }
     }
-    int reading = digitalRead(ENC_BUTTON_PIN);
-    // If the switch changed, due to noise or pressing:
-    if (reading != lastButtonState) {
-      // reset the debouncing timer
-      lastButtonDebounceTime = millis();
-    }
-    if ((millis() - lastButtonDebounceTime) > debounceDelay) {
-      // whatever the reading is at, it's been there for longer
-      // than the debounce delay, so take it as the actual current state:
-      // if the button state has changed:
-      if (reading != buttonState) {
-        buttonState = reading;
-        if (buttonState == LOW) {
-          Particle.publish("button", "pressed");
-        }
-      }
-    }
-    lastButtonState = reading;
+    
+    button1.Update();
+    // Save click codes in LEDfunction, as click codes are reset at next Update()
+    if (button1.clicks != 0) function = button1.clicks;
+    if(button1.clicks == 1) Particle.publish("button", "SINGLE click");
+    if(function == -1) Particle.publish("button", "SINGLE LONG click");
+    function = 0;
+    // delay(5);
     
     // LiPo and Battery Display
     voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
