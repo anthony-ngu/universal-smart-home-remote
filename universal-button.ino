@@ -4,6 +4,7 @@
 #include "math.h"
 #include "neopixel/neopixel.h"
 #include "JSMNSpark/JSMNSpark.h" // for more info on JSMN check out @ https://github.com/zserge/jsmn
+#include "menuItem.h"
 
 SYSTEM_MODE(AUTOMATIC);
 
@@ -25,13 +26,6 @@ long debounceDelay = 100;    // the debounce time; increase if the output flicke
 // Neopixel Globals
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 
-// Setup Globals
-String jsonString = NULL; // the established JSON string
-jsmntok_t jsmnTokens[100]; //JSMN Tokens (a conversion of JSON)
-int i = 0;
-String beginString = "begin--";
-String endString = "--end";
-
 // Rotary Encoder Globals
 #define ENC_A A0
 #define ENC_B A1
@@ -49,6 +43,15 @@ MicroOLED oled;
 double voltage = 0; // Variable to keep track of LiPo voltage
 double soc = 0; // Variable to keep track of LiPo state-of-charge (SOC)
 bool alert; // Variable to keep track of whether alert has been triggered
+char batteryInfo[63];
+
+// Setup Globals
+String jsonString = NULL; // the established JSON string
+jsmntok_t jsmnTokens[100]; //JSMN Tokens (a conversion of JSON)
+int i = 0;
+String beginString = "begin--";
+String endString = "--end";
+String infoText = "Hello!";
 
 void setup()
 {
@@ -127,23 +130,27 @@ void loop()
     // LiPo and Battery Display
     voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
     soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
-    char str[63];
-    sprintf(str, "%.2f V\n%.1f %%", voltage, soc);
-    oled.setFontType(1);  // Set font to type 1
+    sprintf(batteryInfo, "%.1f %%", soc);
+    oled.setFontType(0);  // Set font to type 1
     oled.clear(PAGE);     // Clear the page
-    oled.setCursor(0, 0); // Set cursor to top-left
-    // Print can be used to print a string to the screen:
-    oled.print(str);
+    oled.setCursor(0, 0);
+    oled.print(batteryInfo);
+    oled.setCursor(0,10);
+    oled.print(infoText);
     oled.display();       // Refresh the display
 }
 
 void goIntoStandby()
 {
-    strip.setPixelColor(0, strip.Color(0, 0, 0));
-    strip.show();
+    for (int i = 0; i < 24; i++)
+    {
+        strip.setPixelColor(i, strip.Color(0, 0, 0));
+    }
+
 }
 
-int setupStructure(String args){
+int setupStructure(String args)
+{
     jsmn_parser parser; // creates the parser
     jsmn_init(&parser); // initializes the parser
     int tokenArraySize = 0;
@@ -175,24 +182,51 @@ int setupStructure(String args){
         	    {
                 	switch(jsmnTokens[i].type){
                 	    case JSMN_OBJECT:
-                	        // Particle.publish("parser", "object");
-                	        break;
+                    	    {
+                    	        // Particle.publish("parser", "object");
+                    	        String name = "Receiver";
+                    	       // MenuItem menuObject = MenuItem(name, MENU_ARRAY, inputMenuArray, 2);
+                    	        break;
+                    	    }
                 	    case JSMN_ARRAY:
-                	        // Particle.publish("parser", "array");
-                	        break;
+                    	    {
+                    	        // Particle.publish("parser", "array");
+                    	        String name = "Input";
+                	            String valueArray[] = {"Pandora", "HDMI1"};
+                	           // MenuItem inputValueArray = MenuItem(name, VALUE_ARRAY, valueArray, 2);
+                    	        break;
+                    	    }
                 	    case JSMN_STRING:
-                	        // Particle.publish("parser", "string");
-                	        break;
+                    	    {
+                    	        // Particle.publish("parser", "string");
+                    	        // This should be an int range
+                    	        // min, max, step
+                    	        String intRange = jsonStringData.substring(jsmnTokens[i].start, jsmnTokens[i].end);
+                    	        int minEndIndex = intRange.indexOf(',');
+                    	        int maxEndIndex = intRange.lastIndexOf(',');
+                    	        String min = intRange.substring(0,minEndIndex);
+                    	        String max = intRange.substring(minEndIndex,maxEndIndex);
+                    	        String step = intRange.substring(maxEndIndex);
+                    	        String name = "Volume";
+                    	       // MenuItem inputIntRange = MenuItem(name, INT_RANGE, min.toInt(), max.toInt(), step.toInt(), 2);
+                    	        break;
+                    	    }
                 	    case JSMN_PRIMITIVE:
-                	        // Particle.publish("parser", "primitive");
-                	        //  't', 'f' - boolean
-                            //  'n' - null
-                            //  '-', '0'..'9' - integer
-                	        break;
+                    	    {
+                    	        // Particle.publish("parser", "primitive");
+                    	        //  't', 'f' - boolean
+                    	        //  'n' - null
+                    	        //  '-', '0'..'9' - integer
+                    	        // We should never hit this..
+                    	        return -1;
+                    	        break;
+                    	    }
                 	    default:
-                	        // undefined
-                	        return -1;
-                	        break;
+                    	    {
+                    	        // undefined
+                    	        return -1;
+                    	        break;
+                    	    }
                 	}
                 }
             }else {
