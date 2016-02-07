@@ -14,9 +14,6 @@ SYSTEM_MODE(AUTOMATIC);
 #define PIXEL_COUNT 24
 #define PIXEL_TYPE WS2812B
 
-void doEncoderA();
-void doEncoderB();
-
 // Button Globals
 #define BUTTON_PIN D4
 ClickButton button1(BUTTON_PIN, LOW, CLICKBTN_PULLUP);
@@ -49,6 +46,9 @@ String endString = "--end";
 String infoText = "Hello!";
 String buttonText = "Not Pressed";
 String encoderText = "0";
+
+// Function Declarations
+int ParseIntoMenuItems(String dataString, jsmntok_t token);
 
 void setup()
 {
@@ -177,97 +177,15 @@ int setupStructure(String args)
             // char str[63];
             // sprintf(str, "tokenArraySize: %d", tokenArraySize);
             // Particle.publish("parser", str);
-        	    
         	if (tokenArraySize >= 0)
         	{
         	    // parsed successfuly
         	    for (int i = 0; i < 100; i++) 
         	    {
-        	        String objectString = jsonStringData.substring(jsmnTokens[i].start, jsmnTokens[i].end);
-        	        // oled.clear(PAGE);
-        	        // oled.setCursor(0,0);
-                    // oled.print(objectString);
-                    // oled.display();       // Refresh the display
-                    // delay(2000);
-                	switch(jsmnTokens[i].type){
-                	    case JSMN_OBJECT:
-                    	    {
-                    	        int firstIndex = objectString.indexOf("\"");
-                    	        int secondIndex = objectString.indexOf("\"", firstIndex+1);
-                    	        String nameStr = objectString.substring(firstIndex+1, secondIndex);
-                    	        oled.clear(PAGE);
-                    	        oled.setCursor(0,0);
-                                oled.print("MENU_ARRAY ");
-                                oled.print(jsmnTokens[i].size);
-                                oled.print(objectString);
-                                oled.display();       // Refresh the display
-                                delay(2000);
-                    	        // MenuItem menuObject = MenuItem(nameStr, MENU_ARRAY, inputMenuArray, 2);
-                    	        break;
-                    	    }
-                	    case JSMN_ARRAY:
-                    	    {
-                    	        // Particle.publish("parser", "array");
-                    	       // String name = "Input";
-                	           // String valueArray[] = {"Pandora", "HDMI1"};
-                	            oled.clear(PAGE);
-                    	        oled.setCursor(0,0);
-                                oled.print("VALUE_ARRAY ");
-                                oled.print(jsmnTokens[i].size);
-                                oled.print(objectString);
-                                oled.display();
-                                delay(2000);
-                	           // MenuItem inputValueArray = MenuItem(name, VALUE_ARRAY, valueArray, 2);
-                    	        break;
-                    	    }
-                	    case JSMN_STRING:
-                    	    {
-                    	        // Particle.publish("parser", "string");
-                    	        // This should be an int range
-                    	        // min, max, step
-                    	        int minEndIndex = objectString.indexOf(',');
-                    	        int maxEndIndex = objectString.lastIndexOf(',');
-                    	        String min = objectString.substring(0,minEndIndex);
-                    	        String max = objectString.substring(minEndIndex+1,maxEndIndex);
-                    	        String step = objectString.substring(maxEndIndex+1);
-                    	        oled.clear(PAGE);
-                    	        oled.setCursor(0,0);
-                                
-                                
-                                if(minEndIndex < 0)
-                                {
-                                    // Not an INT_RANGE
-                                    oled.print("STRING ");
-                                    oled.print(objectString);
-                                }else{
-                                    oled.print("INT_RANGE ");
-                                    oled.print("min:"+min+"\n");
-                                    oled.print("max:"+max+"\n");
-                                    oled.print("step:"+step+"\n");
-                                }
-                               
-                                oled.display();       // Refresh the display
-                                delay(2000);
-                    	       // MenuItem inputIntRange = MenuItem(name, INT_RANGE, min.toInt(), max.toInt(), step.toInt(), 2);
-                    	        break;
-                    	    }
-                	    case JSMN_PRIMITIVE:
-                    	    {
-                    	        // Particle.publish("parser", "primitive");
-                    	        //  't', 'f' - boolean
-                    	        //  'n' - null
-                    	        //  '-', '0'..'9' - integer
-                    	        // We should never hit this..
-                    	        return -1;
-                    	        break;
-                    	    }
-                	    default:
-                    	    {
-                    	        // undefined
-                    	        return -1;
-                    	        break;
-                    	    }
-                	}
+        	        if(ParseIntoMenuItems(jsonStringData, jsmnTokens[i]) < 0)
+        	        {
+        	            return -1;
+        	        }
                 }
             }else {
         	    // parse failed
@@ -276,6 +194,83 @@ int setupStructure(String args)
         	}
         }   
     }
+    return 1;
+}
+
+int ParseIntoMenuItems(String dataString, jsmntok_t token)
+{
+    String objectString = dataString.substring(token.start, token.end);
+        	       
+    oled.clear(PAGE);
+    oled.setCursor(0,0);
+    switch(token.type)
+    {
+        case JSMN_OBJECT:
+    	    {
+    	        int firstIndex = objectString.indexOf("\"");
+    	        int secondIndex = objectString.indexOf("\"", firstIndex+1);
+    	        String nameStr = objectString.substring(firstIndex+1, secondIndex);
+                oled.print("MENU_ARRAY ");
+                oled.print(token.size);
+                oled.print(objectString);
+    	        // MenuItem menuObject = MenuItem(nameStr, MENU_ARRAY, inputMenuArray, 2);
+    	        break;
+    	    }
+        case JSMN_ARRAY:
+    	    {
+    	        // Particle.publish("parser", "array");
+    	       // String name = "Input";
+               // String valueArray[] = {"Pandora", "HDMI1"};
+                oled.print("VALUE_ARRAY ");
+                oled.print(token.size);
+                oled.print(objectString);
+               // MenuItem inputValueArray = MenuItem(name, VALUE_ARRAY, valueArray, 2);
+    	        break;
+    	    }
+        case JSMN_STRING:
+    	    {
+    	        // Particle.publish("parser", "string");
+    	        // This should be an int range
+    	        // min, max, step
+    	        int minEndIndex = objectString.indexOf(',');
+    	        int maxEndIndex = objectString.lastIndexOf(',');
+    	        String min = objectString.substring(0,minEndIndex);
+    	        String max = objectString.substring(minEndIndex+1,maxEndIndex);
+    	        String step = objectString.substring(maxEndIndex+1);
+                
+                if(minEndIndex < 0)
+                {
+                    // Not an INT_RANGE
+                    oled.print("STRING ");
+                    oled.print(objectString);
+                }else{
+                    oled.print("INT_RANGE ");
+                    oled.print("min:"+min+"\n");
+                    oled.print("max:"+max+"\n");
+                    oled.print("step:"+step+"\n");
+                }
+    	       // MenuItem inputIntRange = MenuItem(name, INT_RANGE, min.toInt(), max.toInt(), step.toInt(), 2);
+    	        break;
+    	    }
+        case JSMN_PRIMITIVE:
+    	    {
+    	        // Particle.publish("parser", "primitive");
+    	        //  't', 'f' - boolean
+    	        //  'n' - null
+    	        //  '-', '0'..'9' - integer
+    	        // We should never hit this..
+    	        return -1;
+    	        break;
+    	    }
+        default:
+    	    {
+    	        // undefined
+    	        return -1;
+    	        break;
+    	    }
+    }
+    oled.display();       // Refresh the display
+    delay(2000);
     return 1;
 }
 
