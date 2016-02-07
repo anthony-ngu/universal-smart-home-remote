@@ -26,14 +26,10 @@ int function = 0;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 
 // Rotary Encoder Globals
-#define ENC_A A0
-#define ENC_B A1
-volatile bool A_set = false;
-volatile bool B_set = false;
-volatile int encoderPos = 0;
-int prevPos = 0;
-int value = 0;
-long lastEncoderDebounceTime = 0;
+#define ENC_A D1
+#define ENC_B D2
+volatile int counter = 0;
+int pastCounter = 0;
 
 // OLED Globals
 MicroOLED oled;
@@ -59,8 +55,7 @@ void setup()
     // Encoder setup
     pinMode(ENC_A, INPUT_PULLUP);
     pinMode(ENC_B, INPUT_PULLUP);
-    attachInterrupt(ENC_A, doEncoderA, CHANGE);
-    attachInterrupt(ENC_B, doEncoderB, CHANGE);
+    attachInterrupt(ENC_A, encoder_counter, FALLING); 
 
     // Button setup  
     pinMode(buttonPin1, INPUT_PULLUP);
@@ -101,13 +96,13 @@ void loop()
     strip.show();
     
     // Encoder + Button
-    if (prevPos != encoderPos) {
-    //     lastEncoderDebounceTime = millis();
-    //     if ((millis() - lastEncoderDebounceTime) > debounceDelay) {
-            prevPos = encoderPos;
-            infoText = String::format("encoder: %d", encoderPos);
-            // Particle.publish("encoderPos",str);
-        // }
+    if(pastCounter != counter)
+    {
+        char str[63];
+        sprintf(str, "%d", counter);
+        Particle.publish("encoder",str);
+        pastCounter = counter;
+        delay(1000);
     }
     
     button1.Update();
@@ -267,25 +262,6 @@ int setupStructure(String args)
     return 1;
 }
 
-void doEncoderA(){
-  if( digitalRead(ENC_A) != A_set ) {  // debounce once more
-    A_set = !A_set;
-    // adjust counter + if A leads B
-    if ( A_set && !B_set ) 
-      encoderPos += 1;
-  }
-}
-
-// Interrupt on B changing state, same as A above
-void doEncoderB(){
-   if( digitalRead(ENC_B) != B_set ) {
-    B_set = !B_set;
-    //  adjust counter - 1 if B leads A
-    if( B_set && !A_set ) 
-      encoderPos -= 1;
-  }
-}
-
 // Center and print a small title
 // This function is quick and dirty. Only works for titles one
 // line long.
@@ -305,4 +281,12 @@ void printTitle(String title, int font)
   delay(1500);
   oled.clear(PAGE);
 }
+
+void encoder_counter(){
+    if (digitalRead(ENC_B))
+        counter++ ;
+    else
+        counter-- ;
+}
+
 
