@@ -18,16 +18,16 @@ void doEncoderA();
 void doEncoderB();
 
 // Button Globals
-const int buttonPin1 = D4;
-ClickButton button1(buttonPin1, LOW, CLICKBTN_PULLUP);
+#define BUTTON_PIN D4
+ClickButton button1(BUTTON_PIN, LOW, CLICKBTN_PULLUP);
 int function = 0;
 
 // Neopixel Globals
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 
 // Rotary Encoder Globals
-#define ENC_A D1
-#define ENC_B D2
+#define ENC_A D2
+#define ENC_B D3
 volatile int counter = 0;
 int pastCounter = 0;
 
@@ -47,6 +47,8 @@ int i = 0;
 String beginString = "begin--";
 String endString = "--end";
 String infoText = "Hello!";
+String buttonText = "Not Pressed";
+String encoderText = "0";
 
 void setup()
 {
@@ -58,7 +60,7 @@ void setup()
     attachInterrupt(ENC_A, encoder_counter, FALLING); 
 
     // Button setup  
-    pinMode(buttonPin1, INPUT_PULLUP);
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
     button1.debounceTime   = 20;   // Debounce timer in ms
     button1.multiclickTime = 250;  // Time limit for multi clicks
     button1.longClickTime  = 1000; // time until "held-down clicks" register
@@ -95,23 +97,32 @@ void loop()
     strip.setPixelColor(23, strip.Color(255, 0, 0));
     strip.show();
     
-    // Encoder + Button
+    // Encoder
     if(pastCounter != counter)
     {
         char str[63];
         sprintf(str, "%d", counter);
-        Particle.publish("encoder",str);
+        // Particle.publish("encoder",str);
+        encoderText = str;
         pastCounter = counter;
-        delay(1000);
     }
     
     button1.Update();
-    // Save click codes in LEDfunction, as click codes are reset at next Update()
-    if (button1.clicks != 0) function = button1.clicks;
-    if(button1.clicks == 1) Particle.publish("button", "SINGLE click");
-    if(function == -1) Particle.publish("button", "SINGLE LONG click");
-    function = 0;
-    // delay(5);
+    function = button1.clicks;
+    if(function == 1)
+    {
+        // Particle.publish("button", "SINGLE click");
+        buttonText = "SINGLE_CLICK";
+        function = 0;
+    }
+    else if(function == -1) 
+    {
+        //Particle.publish("button", "SINGLE LONG click");
+        buttonText = "LONG_CLICK";
+        function = 0;
+    }else{
+        buttonText = "";
+    }
     
     // LiPo and Battery Display
     voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
@@ -123,7 +134,13 @@ void loop()
     oled.print(batteryInfo);
     oled.setCursor(0,10);
     oled.print(infoText);
+    oled.setCursor(0,20);
+    oled.print(buttonText);
+    oled.setCursor(0,30);
+    oled.print(encoderText);
     oled.display();       // Refresh the display
+    
+    delay(5);
 }
 
 void goIntoStandby()
