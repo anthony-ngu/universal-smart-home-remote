@@ -37,11 +37,11 @@ MicroOLED oled;
 double voltage = 0; // Variable to keep track of LiPo voltage
 double soc = 0; // Variable to keep track of LiPo state-of-charge (SOC)
 bool alert; // Variable to keep track of whether alert has been triggered
-char batteryInfo[63];
+char batteryInfo[30];
 
 // Setup Globals
-String jsonString = NULL; // the established JSON string
-jsmntok_t jsmnTokens[100]; //JSMN Tokens (a conversion of JSON)
+String jsonString; // the established JSON string
+jsmntok_t jsmnTokens[50]; //JSMN Tokens (a conversion of JSON)
 int i = 0;
 String beginString = "begin--";
 String endString = "--end";
@@ -107,7 +107,7 @@ void loop()
     // Encoder
     if(pastCounter != counter)
     {
-        char str[63];
+        char str[20];
         sprintf(str, "%d", counter);
         // Particle.publish("encoder",str);
         encoderText = str;
@@ -188,6 +188,17 @@ int setupStructure(String args)
             int sizeOfMenuArray = 0;
             if (tokenArraySize >= 0)
             {
+                /* For testing the jsmnToken parsing */
+                // for (int i = 0; i < 100; i++){
+                //     oled.clear(PAGE);
+                //     oled.setCursor(0,0);
+                //     char str[3];
+                //     sprintf(str, "%d", i);
+                //     oled.print(str);
+                //     oled.print(jsonStringData.substring(jsmnTokens[i].start, jsmnTokens[i].end));
+                //     oled.display();
+                //     delay(3000);
+                // }
                 // parsed successfuly
                 // First one is always the overarching one
                 menuItemArray = (MenuItem *)malloc(jsmnTokens[0].size/2 * sizeof(MenuItem)); // divided by 2 since key value pairs are considered 2 tokens
@@ -197,9 +208,14 @@ int setupStructure(String args)
                 {
                     // The first should be a String
                     String name = ParseToString(jsonStringData, jsmnTokens[index]);
-                    char str[63];
-                    sprintf(str, "name: %s\n",name.c_str());
-                    oled.print(str);
+                    // char str[30];
+                    // sprintf(str, "name: %s %d\n",name.c_str(), sizeOfMenuArray);
+                    // oled.clear(PAGE);
+                    // oled.setCursor(0,0);
+                    // oled.print(str);
+                    // oled.print(index);
+                    // oled.display();
+                    // delay(1000);
                     index++;// increment index
                     // The second should be the Value (Item, String, etc.)
                     MenuItemParseResult parseResult = ParseToMenuItem(jsonStringData, jsmnTokens, index);
@@ -225,32 +241,42 @@ int setupStructure(String args)
 
 String ParseToString(String dataString, jsmntok_t token)
 {
-    return dataString.substring(token.start, token.end);;
+    return dataString.substring(token.start, token.end);
 }
 
 MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int index)
 {
     MenuItemParseResult itemParseResult;
-    String objectString = dataString.substring(tokens[index].start, tokens[index].end);
-                   
     oled.clear(PAGE);
     oled.setCursor(0,0);
+    char str[15];
+    sprintf(str, "%d\n", index);
+    // sprintf(str, "%d - %d \n", tokens[index].start, tokens[index].end);
+    oled.print(str);
+    oled.display();
+    delay(2000);
+    oled.clear(PAGE); // Clear the buffer.
+    String objectString = dataString.substring(tokens[index].start, tokens[index].end);
+                  
     switch(tokens[index].type)
     {
         case JSMN_OBJECT:
             {
                 oled.print("MENU_ARRAY ");
-                oled.print(tokens[index].size);
                 oled.print(objectString);
-                
+                oled.display();       // Refresh the display
+                delay(2000);
+                oled.clear(PAGE); // Clear the buffer.
                 itemParseResult =  ParseMenuArray(dataString, tokens, index);
                 break;
             }
         case JSMN_ARRAY:
             {
                 oled.print("VALUE_ARRAY ");
-                oled.print(tokens[index].size);
                 oled.print(objectString);
+                oled.display();       // Refresh the display
+                delay(2000);
+                oled.clear(PAGE); // Clear the buffer.
                 int returnIndex = index;
                 String* valueArray = (String *)malloc(tokens[index].size * sizeof(String));
                 for (int j = 0 ; j < tokens[index].size; j++)
@@ -282,6 +308,10 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
                     oled.print("min:"+min+"\n");
                     oled.print("max:"+max+"\n");
                     oled.print("step:"+step+"\n");
+                    
+                    oled.display();       // Refresh the display
+                    delay(2000);
+                    oled.clear(PAGE); // Clear the buffer.
                     tempItem = MenuItem("", INT_RANGE, min.toInt(), max.toInt(), step.toInt());
                 }else{
                 //   throw -2;
@@ -306,14 +336,12 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
                 break;
             }
     }
-    oled.display();       // Refresh the display
-    delay(2000);
     return itemParseResult;
 }
 
 MenuItemParseResult ParseMenuArray(String dataString, jsmntok_t tokens[], int index)
 {
-    MenuItem *tempMenuItemArray = (MenuItem *)malloc(jsmnTokens[0].size * sizeof(MenuItem)); // divided by 2 since key value pairs are considered 2 tokens
+    MenuItem *tempMenuItemArray = (MenuItem *)malloc(jsmnTokens[index].size * sizeof(MenuItem)); // divided by 2 since key value pairs are considered 2 tokens
     int tempIndex = index+1;
     int sizeOfMenuArray = jsmnTokens[index].size;
     for (int i = 0; i < sizeOfMenuArray; i++)
