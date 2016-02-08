@@ -1,3 +1,5 @@
+// #define JSMN_PARENT_LINKS 1 // by defining it JSMN will include links to the parents - does not work right now..
+
 #include "application.h"
 #include "SparkFunMAX17043/SparkFunMAX17043.h"
 #include "SparkFunMicroOLED/SparkFunMicroOLED.h"
@@ -47,12 +49,17 @@ String infoText = "Hello!";
 String buttonText = "Not Pressed";
 String encoderText = "0";
 
+// MenuItemArray
+MenuItem* menuItemArray;
+
 // Function Declarations
-int ParseIntoMenuItems(String dataString, jsmntok_t token);
+String ParseToString(String dataString, jsmntok_t token);
+MenuItemParseResult ParseMenuArray(String dataString, jsmntok_t tokens[], int index);
+MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int index);
 
 void setup()
 {
-    bool success = Particle.function("setupStruct", setupStructure);
+    Particle.function("setupStruct", setupStructure);
     
     // Encoder setup
     pinMode(ENC_A, INPUT_PULLUP);
@@ -171,107 +178,168 @@ int setupStructure(String args)
             String jsonStringData = jsonString.substring(beginString.length(), jsonString.length() - endString.length());
             // Particle.publish("received","endReceived");
             // Particle.publish("receivedString", jsonStringData);
-            // parse it and set up the universal button as such
             
-            tokenArraySize = jsmn_parse(&parser, jsonStringData, jsmnTokens, 100); // hands back the required token allocation size
+            // parse it and set up the universal button as such
+            tokenArraySize = jsmn_parse(&parser, jsonStringData, jsmnTokens, 100); // has not been handing back the required token allocation size
             // char str[63];
             // sprintf(str, "tokenArraySize: %d", tokenArraySize);
             // Particle.publish("parser", str);
-        	if (tokenArraySize >= 0)
-        	{
-        	    // parsed successfuly
-        	    for (int i = 0; i < 100; i++) 
-        	    {
-        	        if(ParseIntoMenuItems(jsonStringData, jsmnTokens[i]) < 0)
-        	        {
-        	            return -1;
-        	        }
+            
+            int sizeOfMenuArray = 0;
+            if (tokenArraySize >= 0)
+            {
+                // parsed successfuly
+                // First one is always the overarching one
+                menuItemArray = (MenuItem *)malloc(jsmnTokens[0].size/2 * sizeof(MenuItem)); // divided by 2 since key value pairs are considered 2 tokens
+                int index = 1;
+                sizeOfMenuArray = jsmnTokens[0].size/2;
+                for (int i = 0; i < sizeOfMenuArray; i++)
+                {
+                    // The first should be a String
+                    String name = ParseToString(jsonStringData, jsmnTokens[index]);
+                    char str[63];
+                    sprintf(str, "name: %s\n",name.c_str());
+                    oled.print(str);
+                    index++;// increment index
+                    // The second should be the Value (Item, String, etc.)
+                    MenuItemParseResult parseResult = ParseToMenuItem(jsonStringData, jsmnTokens, index);
+                    
+                    if(parseResult.newIndex < 0)
+                    {
+                        return -1;
+                    }else{
+                        index = parseResult.newIndex;
+                    }
+                    parseResult.item.name = name;
+                    menuItemArray[i] = parseResult.item;
                 }
-            }else {
-        	    // parse failed
-        	    Particle.publish("parser", "failed");
-        	    return -1;
-        	}
+            } else {
+                // parse failed
+                Particle.publish("parser", "failed");
+                return -1;
+            }
         }   
     }
     return 1;
 }
 
-int ParseIntoMenuItems(String dataString, jsmntok_t token)
+String ParseToString(String dataString, jsmntok_t token)
 {
-    String objectString = dataString.substring(token.start, token.end);
-        	       
+    return dataString.substring(token.start, token.end);;
+}
+
+MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int index)
+{
+    MenuItemParseResult itemParseResult;
+    String objectString = dataString.substring(tokens[index].start, tokens[index].end);
+                   
     oled.clear(PAGE);
     oled.setCursor(0,0);
-    switch(token.type)
+    switch(tokens[index].type)
     {
         case JSMN_OBJECT:
-    	    {
-    	        int firstIndex = objectString.indexOf("\"");
-    	        int secondIndex = objectString.indexOf("\"", firstIndex+1);
-    	        String nameStr = objectString.substring(firstIndex+1, secondIndex);
+            {
                 oled.print("MENU_ARRAY ");
-                oled.print(token.size);
+                oled.print(tokens[index].size);
                 oled.print(objectString);
-    	        // MenuItem menuObject = MenuItem(nameStr, MENU_ARRAY, inputMenuArray, 2);
-    	        break;
-    	    }
-        case JSMN_ARRAY:
-    	    {
-    	        // Particle.publish("parser", "array");
-    	       // String name = "Input";
-               // String valueArray[] = {"Pandora", "HDMI1"};
-                oled.print("VALUE_ARRAY ");
-                oled.print(token.size);
-                oled.print(objectString);
-               // MenuItem inputValueArray = MenuItem(name, VALUE_ARRAY, valueArray, 2);
-    	        break;
-    	    }
-        case JSMN_STRING:
-    	    {
-    	        // Particle.publish("parser", "string");
-    	        // This should be an int range
-    	        // min, max, step
-    	        int minEndIndex = objectString.indexOf(',');
-    	        int maxEndIndex = objectString.lastIndexOf(',');
-    	        String min = objectString.substring(0,minEndIndex);
-    	        String max = objectString.substring(minEndIndex+1,maxEndIndex);
-    	        String step = objectString.substring(maxEndIndex+1);
                 
-                if(minEndIndex < 0)
+                itemParseResult =  ParseMenuArray(dataString, tokens, index);
+                break;
+            }
+        case JSMN_ARRAY:
+            {
+                oled.print("VALUE_ARRAY ");
+                oled.print(tokens[index].size);
+                oled.print(objectString);
+                int returnIndex = index;
+                String* valueArray = (String *)malloc(tokens[index].size * sizeof(String));
+                for (int j = 0 ; j < tokens[index].size; j++)
                 {
-                    // Not an INT_RANGE
-                    oled.print("STRING ");
-                    oled.print(objectString);
-                }else{
+                    // Assume that all VALUE_ARRAYS only contains strings
+                    int tempIndex = index + 1 + j; // add one since the index passed in was for the overall array
+                    String tempString = dataString.substring(tokens[tempIndex].start, tokens[tempIndex].end);
+                    valueArray[j] = tempString;
+                }
+                returnIndex += tokens[index].size * 2 - 1;
+                MenuItem tempItem = MenuItem("", VALUE_ARRAY, valueArray, tokens[index].size);
+                itemParseResult = MenuItemParseResult(returnIndex, tempItem);
+                break;
+            }
+        case JSMN_STRING:
+            {
+                // This should be an int range
+                // min, max, step
+                int minEndIndex = objectString.indexOf(',');
+                int maxEndIndex = objectString.lastIndexOf(',');
+                String min = objectString.substring(0,minEndIndex);
+                String max = objectString.substring(minEndIndex+1,maxEndIndex);
+                String step = objectString.substring(maxEndIndex+1);
+                MenuItem tempItem;
+                
+                if(minEndIndex >= 0)
+                {
                     oled.print("INT_RANGE ");
                     oled.print("min:"+min+"\n");
                     oled.print("max:"+max+"\n");
                     oled.print("step:"+step+"\n");
+                    tempItem = MenuItem("", INT_RANGE, min.toInt(), max.toInt(), step.toInt());
+                }else{
+                //   throw -2;
                 }
-    	       // MenuItem inputIntRange = MenuItem(name, INT_RANGE, min.toInt(), max.toInt(), step.toInt(), 2);
-    	        break;
-    	    }
+                itemParseResult = MenuItemParseResult(index+1, tempItem);
+                break;
+            }
         case JSMN_PRIMITIVE:
-    	    {
-    	        // Particle.publish("parser", "primitive");
-    	        //  't', 'f' - boolean
-    	        //  'n' - null
-    	        //  '-', '0'..'9' - integer
-    	        // We should never hit this..
-    	        return -1;
-    	        break;
-    	    }
+            {
+                // Particle.publish("parser", "primitive");
+                //  't', 'f' - boolean
+                //  'n' - null
+                //  '-', '0'..'9' - integer
+                // We should never hit this..
+                // throw -3;
+                break;
+            }
         default:
-    	    {
-    	        // undefined
-    	        return -1;
-    	        break;
-    	    }
+            {
+                // undefined
+                // throw -4;
+                break;
+            }
     }
     oled.display();       // Refresh the display
     delay(2000);
-    return 1;
+    return itemParseResult;
+}
+
+MenuItemParseResult ParseMenuArray(String dataString, jsmntok_t tokens[], int index)
+{
+    MenuItem *tempMenuItemArray = (MenuItem *)malloc(jsmnTokens[0].size * sizeof(MenuItem)); // divided by 2 since key value pairs are considered 2 tokens
+    int tempIndex = index+1;
+    int sizeOfMenuArray = jsmnTokens[index].size;
+    for (int i = 0; i < sizeOfMenuArray; i++)
+    {
+        // The first should be a String
+        String name = ParseToString(dataString, jsmnTokens[tempIndex]);
+        //printf("name: %s\n",name.c_str());
+        tempIndex++;// increment index
+        // The second should be the Value (Item, String, etc.)
+        MenuItemParseResult parseResult = ParseToMenuItem(dataString, jsmnTokens, tempIndex);
+        
+        //printf("tempIndex: %d\n", parseResult.newIndex);
+        
+        if(parseResult.newIndex < 0)
+        {
+            // throw -10;
+        }else{
+            tempIndex = parseResult.newIndex;
+            
+        }
+        parseResult.item.name = name;
+        tempMenuItemArray[i] = parseResult.item;
+        //printf("MenuArrayIndex: %d\n", i);
+    }
+    MenuItem tempItem = MenuItem("", MENU_ARRAY, tempMenuItemArray, sizeOfMenuArray);
+    return MenuItemParseResult(tempIndex, tempItem);
 }
 
 // Center and print a small title
