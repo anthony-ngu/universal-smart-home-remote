@@ -19,7 +19,7 @@ var settings = {
     "power": ["on", "off"],
     "volume": "-500,0,10", // min, max, increments
     "mute": ["on", "off"],
-    "input": ["Pandora"]
+    "input": ["Pandora", "HDMI1"]
   }
 };
 var stringSettings = 'begin--' + JSON.stringify(settings) + '--end';
@@ -82,7 +82,7 @@ var SendSettingsData = function (device, index) {
     device.callFunction('setupStruct', settingsData, function (err, data) {
       if (err) {
         console.log('An error occurred in sending settings data:', err);
-        throw('error occured in sending settings data', err);
+        // throw('error occured in sending settings data', err);
       } else {
         console.log('Function called succesfully:', data);
         index += 63;
