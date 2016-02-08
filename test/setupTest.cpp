@@ -304,11 +304,11 @@ MenuItemParseResult ParseMenuArray(string dataString, jsmntok_t tokens[], int in
     for (int i = 0; i < sizeOfMenuArray; i++)
     {
         // The first should be a String
-        string name = ParseToString(jsonStringData, jsmnTokens[tempIndex]);
+        string name = ParseToString(dataString, jsmnTokens[tempIndex]);
         printf("name: %s\n",name.c_str());
         tempIndex++;// increment index
         // The second should be the Value (Item, String, etc.)
-        MenuItemParseResult parseResult = ParseToMenuItem(jsonStringData, jsmnTokens, tempIndex);
+        MenuItemParseResult parseResult = ParseToMenuItem(dataString, jsmnTokens, tempIndex);
         
         printf("tempIndex: %d\n", parseResult.newIndex);
         
