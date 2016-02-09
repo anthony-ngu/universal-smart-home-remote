@@ -216,9 +216,19 @@ int setupStructure(String args)
                     // oled.print(index);
                     // oled.display();
                     // delay(1000);
+                    // oled.clear(PAGE);
                     index++;// increment index
                     // The second should be the Value (Item, String, etc.)
                     MenuItemParseResult parseResult = ParseToMenuItem(jsonStringData, jsmnTokens, index);
+                    // oled.clear(PAGE);
+                    // oled.setCursor(0,0);
+                    // char str[30];
+                    // sprintf(str, "%s %d\n",name.c_str(), parseResult.newIndex);
+                    // oled.print(str);
+                    // oled.print(index);
+                    // oled.display();
+                    // delay(1000);
+                    // oled.clear(PAGE);
                     
                     if(parseResult.newIndex < 0)
                     {
@@ -249,13 +259,14 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
     MenuItemParseResult itemParseResult;
     oled.clear(PAGE);
     oled.setCursor(0,0);
-    char str[15];
-    sprintf(str, "%d\n", index);
-    // sprintf(str, "%d - %d \n", tokens[index].start, tokens[index].end);
-    oled.print(str);
-    oled.display();
-    delay(2000);
-    oled.clear(PAGE); // Clear the buffer.
+    // char str[15];
+    // sprintf(str, "%d\n", index);
+    // // sprintf(str, "%d - %d \n", tokens[index].start, tokens[index].end);
+    // oled.print(str);
+    // oled.display();
+    // delay(2000);
+    // oled.clear(PAGE); // Clear the buffer.
+    oled.setCursor(0,0);
     String objectString = dataString.substring(tokens[index].start, tokens[index].end);
                   
     switch(tokens[index].type)
@@ -274,6 +285,9 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
             {
                 oled.print("VALUE_ARRAY ");
                 oled.print(objectString);
+                char str[30];
+                sprintf(str, "size:%d start:%d end:%d\n", tokens[index].size, tokens[index].start, tokens[index].end);
+                oled.print(str);
                 oled.display();       // Refresh the display
                 delay(2000);
                 oled.clear(PAGE); // Clear the buffer.
@@ -284,7 +298,13 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
                     // Assume that all VALUE_ARRAYS only contains strings
                     int tempIndex = index + 1 + j; // add one since the index passed in was for the overall array
                     String tempString = dataString.substring(tokens[tempIndex].start, tokens[tempIndex].end);
+                    tempString.concat("\0");
                     valueArray[j] = tempString;
+                    oled.setCursor(0,0);
+                    oled.print(tempString.toCharArray());
+                    oled.display();       // Refresh the display
+                    delay(2000);
+                    oled.clear(PAGE); // Clear the buffer.
                 }
                 returnIndex += tokens[index].size * 2 - 1;
                 MenuItem tempItem = MenuItem("", VALUE_ARRAY, valueArray, tokens[index].size);
