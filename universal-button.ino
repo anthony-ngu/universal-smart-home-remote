@@ -45,7 +45,7 @@ jsmntok_t jsmnTokens[50]; //JSMN Tokens (a conversion of JSON)
 int i = 0;
 String beginString = "begin--";
 String endString = "--end";
-String infoText = "Hello!";
+String infoText = "Omnii";
 String buttonText = "Not Pressed";
 String encoderText = "0";
 
@@ -247,7 +247,7 @@ int setupStructure(String args)
             }
             oled.clear(PAGE); // Clear the buffer.
             oled.setCursor(0,0);
-            oled.print("all done!");
+            oled.print("Setup done!");
             oled.display();
             delay(2000);
             oled.clear(PAGE); // Clear the buffer.
@@ -274,8 +274,8 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
     // oled.print(str);
     // oled.display();
     // delay(2000);
-    oled.clear(PAGE); // Clear the buffer.
-    oled.setCursor(0,0);
+    // oled.clear(PAGE); // Clear the buffer.
+    // oled.setCursor(0,0);
     switch(tokens[index].type)
     {
         case JSMN_OBJECT:
@@ -284,11 +284,11 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
                 char *objectString = (char *)malloc(sizeOfString*sizeof(char));
                 dataString.substring(tokens[index].start, tokens[index].end).toCharArray(objectString, sizeOfString);
                 objectString[sizeOfString] = '\0';
-                oled.print("MENU_ARRAY ");
-                oled.print(objectString);
-                oled.display();       // Refresh the display
-                delay(2000);
-                oled.clear(PAGE); // Clear the buffer.
+                // oled.print("MENU_ARRAY ");
+                // oled.print(objectString);
+                // oled.display();       // Refresh the display
+                // delay(2000);
+                // oled.clear(PAGE); // Clear the buffer.
                 itemParseResult =  ParseMenuArray(dataString, tokens, index);
                 break;
             }
@@ -298,8 +298,8 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
                 char *objectString = (char *)malloc(sizeOfString*sizeof(char));
                 dataString.substring(tokens[index].start, tokens[index].end).toCharArray(objectString, sizeOfString);
                 objectString[sizeOfString] = '\0';
-                oled.print("VALUE_ARRAY ");
-                oled.print(objectString);
+                // oled.print("VALUE_ARRAY ");
+                // oled.print(objectString);
                 int returnIndex = index;
                 char** valueArray = (char **)malloc(tokens[index].size * sizeof(char *));
                 for (int j = 0 ; j < tokens[index].size; j++)
@@ -347,14 +347,14 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
                 
                 if(minEndIndex >= 0)
                 {
-                    oled.print("INT_RANGE ");
-                    char str[63];
-                    sprintf(str, "min: %s\n", min);
-                    oled.print(str);
-                    sprintf(str, "max: %s\n", max);
-                    oled.print(str);
-                    sprintf(str, "step: %s\n", step);
-                    oled.print(str);
+                    // oled.print("INT_RANGE ");
+                    // char str[63];
+                    // sprintf(str, "min: %s\n", min);
+                    // oled.print(str);
+                    // sprintf(str, "max: %s\n", max);
+                    // oled.print(str);
+                    // sprintf(str, "step: %s\n", step);
+                    // oled.print(str);
                     
                     oled.display();       // Refresh the display
                     delay(1000);
