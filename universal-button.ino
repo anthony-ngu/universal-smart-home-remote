@@ -244,6 +244,12 @@ int setupStructure(String args)
                 Particle.publish("parser", "failed");
                 return -1;
             }
+            oled.clear(PAGE); // Clear the buffer.
+            oled.setCursor(0,0);
+            oled.print("all done!");
+            oled.display();
+            delay(2000);
+            oled.clear(PAGE); // Clear the buffer.
         }   
     }
     return 1;
@@ -259,20 +265,22 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
     MenuItemParseResult itemParseResult;
     oled.clear(PAGE);
     oled.setCursor(0,0);
-    // char str[15];
-    // sprintf(str, "%d\n", index);
-    // // sprintf(str, "%d - %d \n", tokens[index].start, tokens[index].end);
-    // oled.print(str);
-    // oled.display();
-    // delay(2000);
-    // oled.clear(PAGE); // Clear the buffer.
+    char str[15];
+    sprintf(str, "type: %d\n", tokens[index].type);
+    // sprintf(str, "%d - %d \n", tokens[index].start, tokens[index].end);
+    oled.print(str);
+    oled.display();
+    delay(2000);
+    oled.clear(PAGE); // Clear the buffer.
     oled.setCursor(0,0);
-    String objectString = dataString.substring(tokens[index].start, tokens[index].end);
-                  
     switch(tokens[index].type)
     {
         case JSMN_OBJECT:
             {
+                int sizeOfString = tokens[index].end - tokens[index].start + 1;
+                char *objectString = (char *)malloc(sizeOfString*sizeof(char));
+                dataString.substring(tokens[index].start, tokens[index].end).toCharArray(objectString, sizeOfString);
+                objectString[sizeOfString] = '\0';
                 oled.print("MENU_ARRAY ");
                 oled.print(objectString);
                 oled.display();       // Refresh the display
@@ -283,31 +291,38 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
             }
         case JSMN_ARRAY:
             {
+                int sizeOfString = tokens[index].end - tokens[index].start + 1;
+                char *objectString = (char *)malloc(sizeOfString*sizeof(char));
+                dataString.substring(tokens[index].start, tokens[index].end).toCharArray(objectString, sizeOfString);
+                objectString[sizeOfString] = '\0';
                 oled.print("VALUE_ARRAY ");
                 oled.print(objectString);
+                int returnIndex = index;
+                // char** valueArray = (char **)malloc(tokens[index].size * sizeof(char *));
+                // for (int j = 0 ; j < tokens[index].size; j++)
+                // {
+                //     // Assume that all VALUE_ARRAYS only contains strings
+                //     int tempIndex = index + 1 + j; // add one since the index passed in was for the overall array
+                //     int sizeOfString = tokens[tempIndex].end - tokens[tempIndex].start + 1;
+                //     valueArray[j] = (char *)malloc(sizeOfString*sizeof(char));
+                //     // String tempString = dataString.substring(tokens[tempIndex].start, tokens[tempIndex].end);
+                //     dataString.substring(tokens[tempIndex].start, tokens[tempIndex].end).toCharArray(valueArray[j], sizeOfString);
+                //     valueArray[j][sizeOfString-1] = '\0';
+                //     oled.setCursor(0,0);
+                //     oled.print(valueArray[j]);
+                //     oled.display();       // Refresh the display
+                //     delay(2000);
+                //     oled.clear(PAGE); // Clear the buffer.
+                // }
+                returnIndex += tokens[index].size * 2 - 1;
                 char str[30];
-                sprintf(str, "size:%d start:%d end:%d\n", tokens[index].size, tokens[index].start, tokens[index].end);
+                sprintf(str, "size:%d start:%d end:%d\n ret:%d", tokens[index].size, tokens[index].start, tokens[index].end, returnIndex);
                 oled.print(str);
                 oled.display();       // Refresh the display
                 delay(2000);
                 oled.clear(PAGE); // Clear the buffer.
-                int returnIndex = index;
-                String* valueArray = (String *)malloc(tokens[index].size * sizeof(String));
-                for (int j = 0 ; j < tokens[index].size; j++)
-                {
-                    // Assume that all VALUE_ARRAYS only contains strings
-                    int tempIndex = index + 1 + j; // add one since the index passed in was for the overall array
-                    String tempString = dataString.substring(tokens[tempIndex].start, tokens[tempIndex].end);
-                    tempString.concat("\0");
-                    valueArray[j] = tempString;
-                    oled.setCursor(0,0);
-                    oled.print(tempString.toCharArray());
-                    oled.display();       // Refresh the display
-                    delay(2000);
-                    oled.clear(PAGE); // Clear the buffer.
-                }
-                returnIndex += tokens[index].size * 2 - 1;
-                MenuItem tempItem = MenuItem("", VALUE_ARRAY, valueArray, tokens[index].size);
+                // MenuItem tempItem = MenuItem("", VALUE_ARRAY, valueArray, tokens[index].size);
+                MenuItem tempItem = MenuItem();
                 itemParseResult = MenuItemParseResult(returnIndex, tempItem);
                 break;
             }
@@ -315,28 +330,32 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
             {
                 // This should be an int range
                 // min, max, step
-                int minEndIndex = objectString.indexOf(',');
-                int maxEndIndex = objectString.lastIndexOf(',');
-                String min = objectString.substring(0,minEndIndex);
-                String max = objectString.substring(minEndIndex+1,maxEndIndex);
-                String step = objectString.substring(maxEndIndex+1);
-                MenuItem tempItem;
+                // String objectString = dataString.substring(tokens[index].start, tokens[index].end);
+                // int minEndIndex = objectString.indexOf(',');
+                // int maxEndIndex = objectString.lastIndexOf(',');
+                // char* min = (char*)malloc(4 * sizeof(char));
+                // char* max = (char*)malloc(4 * sizeof(char));
+                // char* step = (char*)malloc(4*sizeof(char));
+                // objectString.substring(0,minEndIndex).toCharArray(min, 4);
+                // objectString.substring(minEndIndex+1,maxEndIndex).toCharArray(max, 4);
+                // objectString.substring(maxEndIndex+1).toCharArray(step, 4);
+                // MenuItem tempItem;
                 
-                if(minEndIndex >= 0)
-                {
-                    oled.print("INT_RANGE ");
-                    oled.print("min:"+min+"\n");
-                    oled.print("max:"+max+"\n");
-                    oled.print("step:"+step+"\n");
+                // if(minEndIndex >= 0)
+                // {
+                //     oled.print("INT_RANGE ");
+                //     oled.print("min:"+min+"\n");
+                //     oled.print("max:"+max+"\n");
+                //     oled.print("step:"+step+"\n");
                     
-                    oled.display();       // Refresh the display
-                    delay(2000);
-                    oled.clear(PAGE); // Clear the buffer.
-                    tempItem = MenuItem("", INT_RANGE, min.toInt(), max.toInt(), step.toInt());
-                }else{
-                //   throw -2;
-                }
-                itemParseResult = MenuItemParseResult(index+1, tempItem);
+                //     oled.display();       // Refresh the display
+                //     delay(2000);
+                //     oled.clear(PAGE); // Clear the buffer.
+                //     tempItem = MenuItem("", INT_RANGE, min.toInt(), max.toInt(), step.toInt());
+                // }else{
+                // //   throw -2;
+                // }
+                itemParseResult = MenuItemParseResult(index+1, MenuItem());
                 break;
             }
         case JSMN_PRIMITIVE:
@@ -361,9 +380,9 @@ MenuItemParseResult ParseToMenuItem(String dataString, jsmntok_t tokens[], int i
 
 MenuItemParseResult ParseMenuArray(String dataString, jsmntok_t tokens[], int index)
 {
-    MenuItem *tempMenuItemArray = (MenuItem *)malloc(jsmnTokens[index].size * sizeof(MenuItem)); // divided by 2 since key value pairs are considered 2 tokens
+    MenuItem *tempMenuItemArray = (MenuItem *)malloc(jsmnTokens[index].size/2 * sizeof(MenuItem)); // divided by 2 since key value pairs are considered 2 tokens
     int tempIndex = index+1;
-    int sizeOfMenuArray = jsmnTokens[index].size;
+    int sizeOfMenuArray = jsmnTokens[index].size/2;
     for (int i = 0; i < sizeOfMenuArray; i++)
     {
         // The first should be a String
