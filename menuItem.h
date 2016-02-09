@@ -11,7 +11,7 @@ class MenuItem
 		String name;
 		ValueType type;
 		MenuItem* menuArray;
-		String* valueArray;
+		char** valueArray;
 		int min;
 		int max;
 		int step;
@@ -42,7 +42,7 @@ class MenuItem
 	MenuItem(
 		String inputName,
 		ValueType inputType,
-		String inputValueArray[],
+		char** inputValueArray,
 		int inputLength
 	){
 		name = inputName;
