@@ -64,6 +64,22 @@ Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PART
         var index = 0;
         SendSettingsData(device, index);
       });
+      
+      particleDevice.subscribe('call', function(data){
+        var dataSaved = data.data;
+        var delimiterIndex = dataSaved.indexOf(":");
+        
+        if(dataSaved.substring(0, delimiterIndex) == "volume")
+        {
+          var volumeLevel = dataSaved.substring(delimiterIndex+1);
+          yamaha.setVolumeTo(parseInt(volumeLevel)).done(function(){
+            console.log("Set volume to "+volumeLevel);
+          }, function(err){
+            console.log('error setting receiver volume: ', err);
+          });
+        }
+      });
+      
       // chunk the settingsData in parts and send it
       var index = 0;
       SendSettingsData(device, index);
