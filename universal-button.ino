@@ -25,10 +25,14 @@ int function = 0;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 
 // Rotary Encoder Globals
-#define ENC_A D2
-#define ENC_B D3
-volatile int counter = 0;
-int pastCounter = 0;
+#define ENC_A_PIN D2
+#define ENC_B_PIN D3
+    
+volatile int lastEncoded = 0;
+volatile long encoderValue = 0;
+long lastencoderValue = 0;
+int lastMSB = 0;
+int lastLSB = 0;
 
 // OLED Globals
 MicroOLED oled;
@@ -55,11 +59,15 @@ void goIntoStandby();
 void printData(char * str);
 
 void setup()
-{   
-    // Encoder setup
-    pinMode(ENC_A, INPUT_PULLUP);
-    pinMode(ENC_B, INPUT_PULLUP);
-    attachInterrupt(ENC_A, encoder_counter, FALLING); 
+{
+    	
+    // Initialize Encoder
+    pinMode(ENC_A_PIN, INPUT_PULLUP); 
+    pinMode(ENC_B_PIN, INPUT_PULLUP);
+    
+    // attach interrupts
+    attachInterrupt(ENC_A_PIN, updateEncoder, CHANGE);
+    attachInterrupt(ENC_B_PIN, updateEncoder, CHANGE);
 
     // Button setup  
     pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -86,19 +94,16 @@ void setup()
     oled.clear(PAGE); // Clear the buffer.
     
     // Info Setup
-    // currentMenuItem = MenuItem("volume",-500, 0, 10, NULL);
-    rootMenuItem = MenuItem();
-    // String tempArray[2] = {String("on"), String("off")};
-    // String tempArray2[2] = {String("Pandora"), String("HDMI1")};
-    // MenuItem powerItem = MenuItem(String("power"), tempArray, 2);
-    MenuItem volumeItem = MenuItem(String("volume"),-500, 0, 10);
+    char* tempArray[] = {"on", "off"};
+    char* tempArray2[] = {"Pandora", "HDMI1"};
+    MenuItem powerItem = MenuItem(String("power"), tempArray, 2);
+    MenuItem volumeItem = MenuItem(String("volume"), -500, 0, 10);
     // MenuItem muteItem = MenuItem(String("mute"),  tempArray, 2);
-    // MenuItem inputItem = MenuItem(String("input"),  tempArray2, 2);
+    MenuItem inputItem = MenuItem(String("input"),  tempArray2, 2);
     
-    // MenuItem itemArray[4] = {powerItem, volumeItem, muteItem, inputItem};
-    // rootMenuItem = MenuItem(String("Receiver"), itemArray, 4);
-    // currentMenuItem = rootMenuItem;
-    currentMenuItem = volumeItem;
+    MenuItem itemArray[] = {powerItem, volumeItem, /*muteItem,*/ inputItem};
+    rootMenuItem = MenuItem(String("Receiver"), itemArray, 3);
+    currentMenuItem = rootMenuItem;
 }
 
 void loop()
@@ -110,21 +115,23 @@ void loop()
     strip.setPixelColor(23, strip.Color(255, 0, 0));
     strip.show();
     
-    // Encoder
-    if(pastCounter != counter)
-    {
-        char str[20];
-        sprintf(str, "%d", counter);
-        encoderText = str;
-        pastCounter = counter;
-    }
+    char str[20];
+    sprintf(str, "%d", encoderValue);
+    encoderText = str;
     
     button1.Update();
     function = button1.clicks;
     if(function == 1)
     {
         // go one level deeper or select
-        currentMenuItem.chooseSelection();
+        if(currentMenuItem.optionType == MENU_ARRAY)
+        {
+            currentMenuItem = currentMenuItem.children[currentMenuItem.selectedIndex];
+        }
+        else
+        {
+            currentMenuItem.chooseSelection();   
+        }
         buttonText = "SINGLE_CLICK";
         function = 0;
     }else if(function == 2)
@@ -146,7 +153,7 @@ void loop()
     // LiPo and Battery Display
     voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
     soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
-    sprintf(batteryInfo, "%.1f %%", soc);
+    sprintf(batteryInfo, "Bat:%.1f%%", soc);
     oled.setFontType(0);  // Set font to type 1
     oled.clear(PAGE);     // Clear the page
     oled.setCursor(0, 0);
@@ -171,17 +178,6 @@ void goIntoStandby()
 
 }
 
-void encoder_counter(){
-    if (digitalRead(ENC_B))
-    {
-        counter++ ;
-        currentMenuItem.increment();
-    }else{
-        counter-- ;
-        currentMenuItem.decrement();
-    }
-}
-
 void printData(char * str)
 {
     oled.clear(PAGE);
@@ -191,5 +187,23 @@ void printData(char * str)
     delay(2000);
     oled.clear(PAGE);
 }
-
+    
+void updateEncoder() {
+	int MSB = digitalRead(ENC_A_PIN); //MSB = most significant bit
+	int LSB = digitalRead(ENC_B_PIN); //LSB = least significant bit
+    	
+	int encoded = (MSB << 1) |LSB; //converting the 2 pin value to single number
+	int sum  = (lastEncoded << 2) | encoded; //adding it to the previous encoded value
+    
+	if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011){
+	    encoderValue ++;
+	    currentMenuItem.increment();
+	}
+	if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000){
+	    encoderValue --;
+	    currentMenuItem.decrement();
+	}
+    
+	lastEncoded = encoded; //store this value for next time
+}
 

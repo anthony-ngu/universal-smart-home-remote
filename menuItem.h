@@ -18,7 +18,7 @@ class MenuItem
         int childrenLength;
         
         // OPTION_ARRAY
-        String* options;
+        char** options;
         int optionLength;
         
         // INT_RANGE
@@ -42,8 +42,13 @@ class MenuItem
         
         // inputs
         headerText = inHeaderText;
-        children = inChildren;
         childrenLength = inChildrenLength;
+        
+        children = (MenuItem*)malloc(inChildrenLength*sizeof(MenuItem));
+        for(int i=0;i<inChildrenLength;i++)
+        {
+            children[i] = inChildren[i];
+        }
         
         // calculated
         selectionText = children[selectedIndex].headerText;
@@ -51,7 +56,7 @@ class MenuItem
     
     MenuItem(
         String inHeaderText,
-        String* inOptions,
+        char* inOptions[],
         int inOptionLength)
     {
         // defaults
@@ -60,8 +65,13 @@ class MenuItem
         
         // inputs
         headerText = inHeaderText;
-        options = inOptions;
         optionLength = inOptionLength;
+        
+        options = (char**)malloc(inOptionLength*sizeof(char*));
+        for(int i=0;i<inOptionLength;i++)
+        {
+            options[i] = inOptions[i];
+        }
         
         // calculated
         selectionText = options[selectedIndex];
@@ -134,12 +144,10 @@ class MenuItem
         switch(optionType)
         {
             case MENU_ARRAY:
-                // if(--selectedIndex < 0) selectedIndex = 0;
-                // selectionText = children[selectedIndex].headerText;
+                // selectionText = children[selectedIndex];
                 break;
             case OPTION_ARRAY:
-                // if(--selectedIndex < 0 ) selectedIndex = 0;
-                // selectionText = options[selectedIndex];
+                Particle.publish("call", headerText+":"+selectionText);
                 break;
             case INT_RANGE:
                 Particle.publish("call", headerText+":"+selectionText);

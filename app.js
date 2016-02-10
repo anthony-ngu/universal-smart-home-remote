@@ -68,8 +68,8 @@ Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PART
       particleDevice.subscribe('call', function(data){
         var dataSaved = data.data;
         var delimiterIndex = dataSaved.indexOf(":");
-        
-        if(dataSaved.substring(0, delimiterIndex) == "volume")
+        var identifier = dataSaved.substring(0, delimiterIndex);
+        if(identifier == "volume")
         {
           var volumeLevel = dataSaved.substring(delimiterIndex+1);
           yamaha.setVolumeTo(parseInt(volumeLevel)).done(function(){
@@ -77,6 +77,29 @@ Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PART
           }, function(err){
             console.log('error setting receiver volume: ', err);
           });
+        }
+        else if(identifier == "power")
+        {
+          var value = dataSaved.substring(delimiterIndex+1);
+          if(value == "on")
+          {
+            yamaha.powerOn().done(function(){
+              console.log("Set volume to "+volumeLevel);
+            }, function(err){
+              console.log('error setting receiver volume: ', err);
+            });
+          }else{
+            yamaha.powerOff().done(function(){
+              console.log("Set volume to "+volumeLevel);
+            }, function(err){
+              console.log('error setting receiver volume: ', err);
+            });
+          }
+        }
+        else if(identifier == "input")
+        {
+          var value = dataSaved.substring(delimiterIndex+1);
+          yamaha.setMainInputTo(value);
         }
       });
       
