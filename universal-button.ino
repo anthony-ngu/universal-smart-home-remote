@@ -38,6 +38,7 @@ int lastLSB = 0;
 MicroOLED oled;
 long lastActionTime = (long)millis(); // get current time
 bool screenOn = true;
+long screenSaverDelay = 60000; // 60 seconds
 
 // Battery Monitoring Globals
 double voltage = 0; // Variable to keep track of LiPo voltage
@@ -152,7 +153,7 @@ void loop()
         screenOn = true;
     }
     
-    if (lastActionTime < (long)millis()-60000)
+    if (lastActionTime < (long)millis()-screenSaverDelay)
     {
         screenOn = false;
     }
