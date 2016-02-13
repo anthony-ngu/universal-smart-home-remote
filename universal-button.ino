@@ -36,6 +36,8 @@ int lastLSB = 0;
 
 // OLED Globals
 MicroOLED oled;
+long lastActionTime = (long)millis(); // get current time
+bool screenOn = true;
 
 // Battery Monitoring Globals
 double voltage = 0; // Variable to keep track of LiPo voltage
@@ -110,67 +112,82 @@ void setup()
 
 void loop()
 {
-    // NeoPixel Ring
-    // goIntoStandby();
-    strip.setPixelColor(1, strip.Color(0, 0, 255));
-    strip.setPixelColor(0, strip.Color(0, 255, 0));
-    strip.setPixelColor(23, strip.Color(255, 0, 0));
-    strip.show();
-    
     char str[20];
     sprintf(str, "%d", encoderValue);
     encoderText = str;
     
     button1.Update();
-    function = button1.clicks;
-    if(function == 1)
+    if (button1.clicks != 0)
     {
-        // go one level deeper or select
-        if(currentMenuItem.optionType == MENU_ARRAY)
+        function = button1.clicks;
+        if(function == 1)
         {
-            currentMenuItem = currentMenuItem.children[currentMenuItem.selectedIndex];
-        }
-        else
+            // go one level deeper or select
+            if(currentMenuItem.optionType == MENU_ARRAY)
+            {
+                currentMenuItem = currentMenuItem.children[currentMenuItem.selectedIndex];
+            }
+            else
+            {
+                currentMenuItem.chooseSelection();   
+            }
+            buttonText = "SINGLE_CLICK";
+            function = 0;
+        }else if(function == 2)
         {
-            currentMenuItem.chooseSelection();   
+            // go one level back
+            buttonText = "DOUBLE_CLICK";
+            function = 0;
         }
-        buttonText = "SINGLE_CLICK";
-        function = 0;
-    }else if(function == 2)
-    {
-        // go one level back
-        buttonText = "DOUBLE_CLICK";
-        function = 0;
-    }
-    else if(function == -1) 
-    {
-        // go back to the home screen
-        currentMenuItem = rootMenuItem;
-        buttonText = "LONG_CLICK";
-        function = 0;
-    }else{
-        buttonText = "";
+        else if(function == -1) 
+        {
+            // go back to the home screen
+            currentMenuItem = rootMenuItem;
+            buttonText = "LONG_CLICK";
+            function = 0;
+        }else{
+            buttonText = "";
+        }
+        lastActionTime = (long)millis();
+        screenOn = true;
     }
     
-    // LiPo and Battery Display
-    voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
-    soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
-    sprintf(batteryInfo, "%.1f%%", soc);
-    oled.setFontType(0);  // Set font to type 0
-    oled.clear(PAGE);     // Clear the page
-    printBatteryIcon(soc);
-    oled.setCursor(15, 0);
-    oled.print(batteryInfo);
-    int middleX = oled.getLCDWidth() / 2;
-    oled.setCursor(middleX - (oled.getFontWidth() * (currentMenuItem.headerText.length()/2)) - 3, 20);
-    oled.print(currentMenuItem.headerText);
-    // oled.setCursor(0,20);
-    // oled.print(buttonText);
-    // oled.setCursor(0,30);
-    // oled.print(encoderText);
-    oled.setCursor(middleX - (oled.getFontWidth() * (currentMenuItem.selectionText.length()/2)) - 3, 40);
-    oled.print(currentMenuItem.selectionText);
-    oled.display();       // Refresh the display
+    if (lastActionTime < (long)millis()-60000)
+    {
+        screenOn = false;
+    }
+    
+    if(screenOn)
+    {
+        // NeoPixel Ring
+        strip.setPixelColor(1, strip.Color(0, 0, 255));
+        strip.setPixelColor(0, strip.Color(0, 255, 0));
+        strip.setPixelColor(23, strip.Color(255, 0, 0));
+        strip.show();
+        
+        // LiPo and Battery Display
+        voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
+        soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
+        sprintf(batteryInfo, "%.1f%%", soc);
+        oled.setFontType(0);  // Set font to type 0
+        oled.clear(PAGE);     // Clear the page
+        printBatteryIcon(soc);
+        oled.setCursor(15, 0);
+        oled.print(batteryInfo);
+        int middleX = oled.getLCDWidth() / 2;
+        oled.setCursor(middleX - (oled.getFontWidth() * (currentMenuItem.headerText.length()/2)) - 3, 20);
+        oled.print(currentMenuItem.headerText);
+        // oled.setCursor(0,20);
+        // oled.print(buttonText);
+        // oled.setCursor(0,30);
+        // oled.print(encoderText);
+        oled.setCursor(middleX - (oled.getFontWidth() * (currentMenuItem.selectionText.length()/2)) - 3, 40);
+        oled.print(currentMenuItem.selectionText);
+        oled.display();       // Refresh the display
+    }else{
+        oled.clear(PAGE);     // Clear the page
+        oled.display();       // Refresh the display
+    }
 }
 
 void printBatteryIcon(double percentage)
@@ -234,4 +251,6 @@ void updateEncoder() {
 	}
     
 	lastEncoded = encoded; //store this value for next time
+	lastActionTime = (long)millis();
+    screenOn = true;
 }
