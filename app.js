@@ -10,7 +10,7 @@ var assert = require('assert');
 var env = require('node-env-file');
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
-var YamahaAPI = require("yamaha-nodejs");
+var YamahaAPI = require('./yamaha/yamaha.js');
 var Particle = require('spark');
 
 // when stringified, cannot be larger than 63 characters

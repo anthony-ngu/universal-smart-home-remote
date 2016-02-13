@@ -1,3 +1,6 @@
 [submodule "wemo"]
 	path = wemo
 	url = https://github.com/anthony-ngu/node-upnp-controlpoint.git
+[submodule "yamaha"]
+	path = yamaha
+	url = https://anthony-ngu@github.com/anthony-ngu/yamaha-nodejs.git
