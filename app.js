@@ -31,45 +31,18 @@ env(__dirname + '/.env');
 var yamaha = new YamahaAPI(process.env.YAMAHA_IP);
 var particleDevice = 0;
 
-// yamaha.powerOn().done(function () {
-//   console.log("powerOn");
-//   yamaha.setMainInputTo("Pandora").done(function () {
-//     console.log("Switched to Pandora");
-//     // default volume
-//     yamaha.setVolumeTo(-350).done(function(){
-//       console.log("Set volume to -350");
-//     }, function(err){
-//       console.log('error setting receiver volume to -350: ', err);
-//     });
-//   }, function (err) {
-//     console.log('error switching receiver to pandora: ', err)
-//   });
-// }, function (err) {
-//   console.log('error turning the receiver on: ', err)
-// });
-
 console.log(process.env.PARTICLE_ID);
 
 Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PARTICLE_PASSWORD }, function (err, body) {
   Particle.getDevice(process.env.PARTICLE_ID, function (err, device) {
     if (device != null && err == null) {
       particleDevice = device;
-      // console.log(particleDevice);
-     
-      particleDevice.subscribe('received', function (data) {
-        console.log("Event: " + data);
-      });
-      
-      particleDevice.subscribe('setupInit', function(data){
-        var index = 0;
-        SendSettingsData(device, index);
-      });
       
       particleDevice.subscribe('call', function(data){
         var dataSaved = data.data;
         var delimiterIndex = dataSaved.indexOf(":");
         var identifier = dataSaved.substring(0, delimiterIndex);
-        if(identifier == "volume")
+        if(identifier == "Volume")
         {
           var volumeLevel = dataSaved.substring(delimiterIndex+1);
           yamaha.setVolumeTo(parseInt(volumeLevel)).done(function(){
@@ -78,7 +51,7 @@ Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PART
             console.log('error setting receiver volume: ', err);
           });
         }
-        else if(identifier == "power")
+        else if(identifier == "Power")
         {
           var value = dataSaved.substring(delimiterIndex+1);
           if(value == "on")
@@ -96,37 +69,56 @@ Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PART
             });
           }
         }
-        else if(identifier == "input")
+        else if(identifier == "Mute")
+        {
+          var value = dataSaved.substring(delimiterIndex+1);
+          if(value == "on")
+          {
+            yamaha.muteOn().done(function(){
+              console.log("Turned Mute On");
+            }, function(err){
+              console.log('error setting mute', err);
+            });
+          }else{
+            yamaha.muteOff().done(function(){
+              console.log("Turned Mute Off");
+            }, function(err){
+              console.log('error setting mute', err);
+            });
+          }
+        }
+        else if(identifier == "Controls")
+        {
+          var value = dataSaved.substring(delimiterIndex+1);
+          if(value == "play")
+          {
+            yamaha.play().done(function(){
+              console.log("set play");
+            }, function(err){
+              console.log('error:', err);
+            });
+          }else if(value == "pause"){
+            yamaha.pause().done(function(){
+              console.log("set pause");
+            }, function(err){
+              console.log('error:', err);
+            });
+          }else if(value == "skip"){
+            yamaha.skip().done(function(){
+              console.log("set skip");
+            }, function(err){
+              console.log('error:', err);
+            });
+          }
+        }
+        else if(identifier == "Input")
         {
           var value = dataSaved.substring(delimiterIndex+1);
           yamaha.setMainInputTo(value);
         }
       });
-      
-      // chunk the settingsData in parts and send it
-      var index = 0;
-      SendSettingsData(device, index);
-      
     } else {
       console.log('particle device could not be found');
     }
   });
 });
-
-// A recursive function that sends the settings data in chunks one after the other
-var SendSettingsData = function (device, index) {
-  if(index < stringSettings.length){
-    var settingsData = stringSettings.substring(index, index + 63);
-    console.log(settingsData + '~' + settingsData.length);
-    device.callFunction('setupStruct', settingsData, function (err, data) {
-      if (err) {
-        console.log('An error occurred in sending settings data:', err);
-        // throw('error occured in sending settings data', err);
-      } else {
-        console.log('Function called succesfully:', data);
-        index += 63;
-        SendSettingsData(device, index);
-      }
-    }); 
-  }
-}

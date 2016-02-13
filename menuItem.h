@@ -6,6 +6,10 @@ typedef enum {
 
 class MenuItem
 {
+    private:
+        int internalStepLimit = 5;
+        int internalCounter = 0;
+        
     public:
         String headerText;
         String selectionText = "";
@@ -98,44 +102,56 @@ class MenuItem
     }
     
     void increment(){
-        switch(optionType)
+        if(internalCounter < 0) internalCounter = 0;
+        internalCounter++;
+        if(internalCounter >= internalStepLimit)
         {
-            case MENU_ARRAY:
-                if(++selectedIndex >= childrenLength) selectedIndex = childrenLength-1;
-                selectionText = children[selectedIndex].headerText;
-                break;
-            case OPTION_ARRAY:
-                if(++selectedIndex >= optionLength) selectedIndex = optionLength-1;
-                selectionText = options[selectedIndex];
-                break;
-            case INT_RANGE:
-                count += step;
-                if(count > max) count = max;
-                selectionText = String(count);
-                break;    
-            default:
-                break;
+            switch(optionType)
+            {
+                case MENU_ARRAY:
+                    if(++selectedIndex >= childrenLength) selectedIndex = childrenLength-1;
+                    selectionText = children[selectedIndex].headerText;
+                    break;
+                case OPTION_ARRAY:
+                    if(++selectedIndex >= optionLength) selectedIndex = optionLength-1;
+                    selectionText = options[selectedIndex];
+                    break;
+                case INT_RANGE:
+                    count += step;
+                    if(count > max) count = max;
+                    selectionText = String(count);
+                    break;    
+                default:
+                    break;
+            }
+            internalCounter = 0;
         }
     }
     
     void decrement(){
-        switch(optionType)
+        if(internalCounter > 0) internalCounter = 0;
+        internalCounter--;
+        if(internalCounter <= -internalStepLimit)
         {
-            case MENU_ARRAY:
-                if(--selectedIndex < 0) selectedIndex = 0;
-                selectionText = children[selectedIndex].headerText;
-                break;
-            case OPTION_ARRAY:
-                if(--selectedIndex < 0 ) selectedIndex = 0;
-                selectionText = options[selectedIndex];
-                break;
-            case INT_RANGE:
-                count -= step;
-                if(count < min) count = min;
-                selectionText = String(count);
-                break;    
-            default:
-                break;
+            switch(optionType)
+            {
+                case MENU_ARRAY:
+                    if(--selectedIndex < 0) selectedIndex = 0;
+                    selectionText = children[selectedIndex].headerText;
+                    break;
+                case OPTION_ARRAY:
+                    if(--selectedIndex < 0 ) selectedIndex = 0;
+                    selectionText = options[selectedIndex];
+                    break;
+                case INT_RANGE:
+                    count -= step;
+                    if(count < min) count = min;
+                    selectionText = String(count);
+                    break;    
+                default:
+                    break;
+            }
+            internalCounter = 0;
         }
     }
     

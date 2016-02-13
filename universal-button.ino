@@ -95,14 +95,16 @@ void setup()
     
     // Info Setup
     char* tempArray[] = {"on", "off"};
-    char* tempArray2[] = {"Pandora", "HDMI1"};
-    MenuItem powerItem = MenuItem(String("power"), tempArray, 2);
-    MenuItem volumeItem = MenuItem(String("volume"), -500, 0, 10);
-    // MenuItem muteItem = MenuItem(String("mute"),  tempArray, 2);
-    MenuItem inputItem = MenuItem(String("input"),  tempArray2, 2);
+    char* tempArray2[] = {"Pandora", "HDMI1", "HDMI2", "HDMI3", "HDMI4"};
+    char* tempArray3[] = {"play", "pause", "skip"};
+    MenuItem powerItem = MenuItem(String("Power"), tempArray, 2);
+    MenuItem volumeItem = MenuItem(String("Volume"), -500, 0, 10);
+    MenuItem muteItem = MenuItem(String("Mute"),  tempArray, 2);
+    MenuItem inputItem = MenuItem(String("Input"),  tempArray2, 2);
+    MenuItem playbackItem = MenuItem(String("Controls"), tempArray3, 3);
     
-    MenuItem itemArray[] = {powerItem, volumeItem, /*muteItem,*/ inputItem};
-    rootMenuItem = MenuItem(String("Receiver"), itemArray, 3);
+    MenuItem itemArray[] = {powerItem, volumeItem, muteItem, playbackItem, inputItem};
+    rootMenuItem = MenuItem(String("Receiver"), itemArray, 5);
     currentMenuItem = rootMenuItem;
 }
 
@@ -153,20 +155,47 @@ void loop()
     // LiPo and Battery Display
     voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
     soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
-    sprintf(batteryInfo, "Bat:%.1f%%", soc);
-    oled.setFontType(0);  // Set font to type 1
+    sprintf(batteryInfo, "%.1f%%", soc);
+    oled.setFontType(0);  // Set font to type 0
     oled.clear(PAGE);     // Clear the page
-    oled.setCursor(0, 0);
+    printBatteryIcon(soc);
+    oled.setCursor(15, 0);
     oled.print(batteryInfo);
-    oled.setCursor(0,10);
+    int middleX = oled.getLCDWidth() / 2;
+    oled.setCursor(middleX - (oled.getFontWidth() * (currentMenuItem.headerText.length()/2)) - 3, 20);
     oled.print(currentMenuItem.headerText);
-    oled.setCursor(0,20);
-    oled.print(buttonText);
-    oled.setCursor(0,30);
-    oled.print(encoderText);
-    oled.setCursor(0,40);
+    // oled.setCursor(0,20);
+    // oled.print(buttonText);
+    // oled.setCursor(0,30);
+    // oled.print(encoderText);
+    oled.setCursor(middleX - (oled.getFontWidth() * (currentMenuItem.selectionText.length()/2)) - 3, 40);
     oled.print(currentMenuItem.selectionText);
     oled.display();       // Refresh the display
+}
+
+void printBatteryIcon(double percentage)
+{
+    for(int i=0;i<10;i++)
+    {
+        oled.pixel(i,0);
+        oled.pixel(i,5);
+    }
+    for(int i=0;i<5;i++)
+    {
+        oled.pixel(0,i);
+        oled.pixel(10,i);
+    }
+    for(int i=0;i<4;i++)
+    {
+        oled.pixel(11,i+1);
+    }
+    for(int i=0;i<percentage/10;i++)
+    {
+        for(int j=0;j<5;j++)
+        {
+            oled.pixel(i,j);
+        }
+    }
 }
 
 void goIntoStandby()
@@ -206,4 +235,3 @@ void updateEncoder() {
     
 	lastEncoded = encoded; //store this value for next time
 }
-
