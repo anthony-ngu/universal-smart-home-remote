@@ -103,11 +103,17 @@ void setup()
     MenuItem powerItem = MenuItem(String("Power"), tempArray, 2);
     MenuItem volumeItem = MenuItem(String("Volume"), -500, 0, 10);
     MenuItem muteItem = MenuItem(String("Mute"),  tempArray, 2);
-    MenuItem inputItem = MenuItem(String("Input"),  tempArray2, 2);
+    MenuItem inputItem = MenuItem(String("Input"),  tempArray2, 5);
     MenuItem playbackItem = MenuItem(String("Controls"), tempArray3, 3);
     
     MenuItem itemArray[] = {powerItem, volumeItem, muteItem, playbackItem, inputItem};
-    rootMenuItem = MenuItem(String("Receiver"), itemArray, 5);
+    MenuItem receiverItem = MenuItem(String("Receiver"), itemArray, 5);
+    
+    MenuItem wemoItem = MenuItem(String("Wemo"), tempArray, 2);
+    
+    MenuItem deviceArray[] = {receiverItem, wemoItem};
+    
+    rootMenuItem = MenuItem(String("Devices"), deviceArray, 2);
     currentMenuItem = rootMenuItem;
 }
 

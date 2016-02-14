@@ -55,7 +55,7 @@ function Wemo(params) {
           });
 
           console.log("device found");
-          self.emit("deviceFound");
+          // self.emit("deviceFound");
         }
       }
       // check if wemoDevice was not found (if not, log it)
