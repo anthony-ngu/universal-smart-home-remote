@@ -23,6 +23,7 @@ int function = 0;
 
 // Neopixel Globals
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
+#define BRIGHTNESS 10
 
 // Rotary Encoder Globals
 #define ENC_A_PIN D2
@@ -44,6 +45,12 @@ long screenSaverDelay = 60000; // 60 seconds
 double voltage = 0; // Variable to keep track of LiPo voltage
 double soc = 0; // Variable to keep track of LiPo state-of-charge (SOC)
 bool alert; // Variable to keep track of whether alert has been triggered
+bool charging = false;
+int chargingLedValue = 0;
+double MAX_LED_VALUE = 100.0;
+bool ledValIncreasing = true;
+long lastLedChangeTime = (long)millis(); // get current time
+long ledAnimationDelay = 100;
 char batteryInfo[30];
 
 // Setup Globals
@@ -81,7 +88,8 @@ void setup()
     // Neopixel Ring Setup
     strip.begin();
     strip.show(); // Initialize all pixels to 'off'
-    strip.setBrightness(10); // Stops the LEDs from being blinding
+    strip.setBrightness(BRIGHTNESS); // Stops the LEDs from being blinding
+    strip.show();
     
     // Set up the MAX17043 LiPo fuel gauge:
     lipo.begin(); // Initialize the MAX17043 LiPo fuel gauge
@@ -164,18 +172,33 @@ void loop()
         screenOn = false;
     }
     
+    // LiPo and Battery Display
+    double pastVoltage = voltage;
+    voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
+    soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
+    sprintf(batteryInfo, "%.1f%%", soc);
+    if(pastVoltage<voltage)
+    {
+        charging = true;
+    }
+    else if(pastVoltage>voltage)
+    {
+        charging = false;
+        standbyLights();
+    }
+
+    if(charging)
+    {
+        chargingLights();
+    }
+    // strip.setPixelColor(1, strip.Color(0, 0, 255));
+    // strip.setPixelColor(0, strip.Color(0, 255, 0));
+    // strip.setPixelColor(23, strip.Color(255, 0, 0));
+    // strip.show();
+
     if(screenOn)
     {
-        // NeoPixel Ring
-        strip.setPixelColor(1, strip.Color(0, 0, 255));
-        strip.setPixelColor(0, strip.Color(0, 255, 0));
-        strip.setPixelColor(23, strip.Color(255, 0, 0));
-        strip.show();
-        
         // LiPo and Battery Display
-        voltage = lipo.getVoltage(); // lipo.getVoltage() returns a voltage value (e.g. 3.93)
-        soc = lipo.getSOC(); // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
-        sprintf(batteryInfo, "%.1f%%", soc);
         oled.setFontType(0);  // Set font to type 0
         oled.clear(PAGE);     // Clear the page
         printBatteryIcon(soc);
@@ -222,13 +245,44 @@ void printBatteryIcon(double percentage)
     }
 }
 
-void goIntoStandby()
+void standbyLights()
 {
     for (int i = 0; i < 24; i++)
     {
         strip.setPixelColor(i, strip.Color(0, 0, 0));
     }
+    strip.show();
+}
 
+void chargingLights()
+{
+    if(lastLedChangeTime < (long)millis() - ledAnimationDelay)
+    {
+        lastLedChangeTime = (long)millis();
+        double value = chargingLedValue/MAX_LED_VALUE;
+        if(chargingLedValue > MAX_LED_VALUE)
+        {
+            ledValIncreasing = false;
+        }
+        else if(chargingLedValue < 0)
+        {
+            chargingLedValue = 0;
+            ledValIncreasing = true;
+        }
+        
+        for (int i = 0; i < 24; i++)
+        {
+            strip.setPixelColor(i, strip.Color(0,0,255*value));
+        }
+        strip.show();
+        
+        if(ledValIncreasing)
+        {
+            chargingLedValue++;
+        }else{
+            chargingLedValue--;
+        }
+    }
 }
 
 void printData(char * str)
