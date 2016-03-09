@@ -1,4 +1,4 @@
-# Omnii
+# Universal Smart Home Remote
 The universal remote for smart home devices in the form of a button!
 
 Features:
