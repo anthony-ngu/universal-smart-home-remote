@@ -45,12 +45,13 @@ long screenSaverDelay = 60000; // 60 seconds
 double voltage = 0; // Variable to keep track of LiPo voltage
 double soc = 0; // Variable to keep track of LiPo state-of-charge (SOC)
 bool alert; // Variable to keep track of whether alert has been triggered
-bool charging = false;
 int chargingLedValue = 0;
 double MAX_LED_VALUE = 100.0;
 bool ledValIncreasing = true;
 long lastLedChangeTime = (long)millis(); // get current time
 long ledAnimationDelay = 100;
+int consistencyCounter = 0;
+int consistencyCounterLimit = 3;
 char batteryInfo[30];
 
 // Setup Globals
@@ -170,6 +171,9 @@ void loop()
     if (lastActionTime < (long)millis()-screenSaverDelay)
     {
         screenOn = false;
+        standbyLights();
+        // Put the device into stop mode with wakeup using a change interrupt on one of the encoder pins
+        System.sleep(ENC_A_PIN,CHANGE);
     }
     
     // LiPo and Battery Display
@@ -179,15 +183,15 @@ void loop()
     sprintf(batteryInfo, "%.1f%%", soc);
     if(pastVoltage<voltage)
     {
-        charging = true;
+        consistencyCounter++;
     }
     else if(pastVoltage>voltage)
     {
-        charging = false;
+        consistencyCounter = 0;
         standbyLights();
     }
 
-    if(charging)
+    if(consistencyCounter > consistencyCounterLimit)
     {
         chargingLights();
     }
