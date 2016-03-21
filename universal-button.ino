@@ -18,7 +18,7 @@ SYSTEM_MODE(AUTOMATIC);
 
 // Button Globals
 #define BUTTON_PIN D4
-ClickButton button1(BUTTON_PIN, LOW, CLICKBTN_PULLUP);
+ClickButton button1(BUTTON_PIN, HIGH);
 int function = 0;
 
 // Neopixel Globals
@@ -37,7 +37,7 @@ int lastLSB = 0;
 
 // OLED Globals
 MicroOLED oled;
-long lastActionTime = (long)millis(); // get current time
+long lastActionTime; // get current time
 bool screenOn = true;
 long screenSaverDelay = 60000; // 60 seconds
 
@@ -71,7 +71,8 @@ void printData(char * str);
 
 void setup()
 {
-    	
+    lastActionTime = (long)millis();
+    
     // Initialize Encoder
     pinMode(ENC_A_PIN, INPUT_PULLUP); 
     pinMode(ENC_B_PIN, INPUT_PULLUP);
@@ -81,7 +82,7 @@ void setup()
     attachInterrupt(ENC_B_PIN, updateEncoder, CHANGE);
 
     // Button setup  
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_PIN, INPUT);
     button1.debounceTime   = 20;   // Debounce timer in ms
     button1.multiclickTime = 250;  // Time limit for multi clicks
     button1.longClickTime  = 1000; // time until "held-down clicks" register
@@ -168,12 +169,15 @@ void loop()
         screenOn = true;
     }
     
+    // Automatic Standbymode
     if (lastActionTime < (long)millis()-screenSaverDelay)
     {
         screenOn = false;
+        oled.clear(PAGE);     // Clear the page
+        oled.display();       // Refresh the display
         standbyLights();
         // Put the device into stop mode with wakeup using a change interrupt on one of the encoder pins
-        System.sleep(ENC_A_PIN,CHANGE);
+        System.sleep(BUTTON_PIN,RISING);
     }
     
     // LiPo and Battery Display
