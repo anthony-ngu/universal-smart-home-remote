@@ -1,13 +1,5 @@
-/*
-Declared in .env file:
-  YAMAHA_IP
-  PARTICLE_USER
-  PARTICLE_PASSWORD
-  PARTICLE_ID
-*/
-
 var assert = require('assert');
-var env = require('node-env-file');
+var config = require('./config.json');
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var YamahaAPI = require('./yamaha/yamaha.js');
@@ -15,18 +7,16 @@ var Wemo = require('./Wemo.js');
 var Particle = require('spark');
 
 var wemoDevice = new Wemo({
-  "name":process.env.WEMO_DEVICE
+  "name":config.WEMO_DEVICE
 });
 
-env(__dirname + '/.env');
-
-var yamaha = new YamahaAPI(process.env.YAMAHA_IP);
+var yamaha = new YamahaAPI(config.YAMAHA_IP);
 var particleDevice = 0;
 
-console.log(process.env.PARTICLE_ID);
+console.log(config.PARTICLE_ID);
 
-Particle.login({ username: process.env.PARTICLE_USER, password: process.env.PARTICLE_PASSWORD }, function (err, body) {
-  Particle.getDevice(process.env.PARTICLE_ID, function (err, device) {
+Particle.login({ username: config.PARTICLE_USER, password: config.PARTICLE_PASSWORD }, function (err, body) {
+  Particle.getDevice(config.PARTICLE_ID, function (err, device) {
     if (device != null && err == null) {
       particleDevice = device;
       
