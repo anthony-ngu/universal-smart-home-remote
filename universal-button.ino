@@ -16,6 +16,10 @@ SYSTEM_MODE(AUTOMATIC);
 #define PIXEL_COUNT 24
 #define PIXEL_TYPE WS2812B
 
+// Timer Globals
+long lastActionTime;
+bool standbyMode = false;
+
 // Button Globals
 #define BUTTON_PIN D4
 ClickButton button1(BUTTON_PIN, HIGH);
@@ -37,7 +41,6 @@ int lastLSB = 0;
 
 // OLED Globals
 MicroOLED oled;
-long lastActionTime; // get current time
 bool screenOn = true;
 long screenSaverDelay = 60000; // 60 seconds
 
@@ -71,6 +74,7 @@ void printData(char * str);
 
 void setup()
 {
+    Particle.publish("starting-setup");
     lastActionTime = (long)millis();
     
     // Initialize Encoder
@@ -129,6 +133,14 @@ void setup()
 
 void loop()
 {
+    if(standbyMode)
+    {
+        // It just came out of standby
+        Particle.publish("waking-up");
+        lastActionTime = (long)millis();
+        standbyMode = false;
+        screenOn = true;
+    }
     char str[20];
     sprintf(str, "%d", encoderValue);
     encoderText = str;
@@ -177,6 +189,8 @@ void loop()
         oled.display();       // Refresh the display
         standbyLights();
         // Put the device into stop mode with wakeup using a change interrupt on one of the encoder pins
+        Particle.publish("starting-standby");
+        standbyMode = true; // set standbyMode before going into stop mode so that it can recover on restart
         System.sleep(BUTTON_PIN,RISING);
     }
     
