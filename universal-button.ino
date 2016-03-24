@@ -28,6 +28,9 @@ int function = 0;
 // Neopixel Globals
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 #define BRIGHTNESS 10
+int fadeValue = 0;
+int fadeAdder = 1;
+int MAX_FADE_VALUE = 500;
 
 // Rotary Encoder Globals
 #define ENC_A_PIN D2
@@ -133,6 +136,7 @@ void setup()
 
 void loop()
 {
+    fadingLights();
     if(standbyMode)
     {
         // It just came out of standby
@@ -206,17 +210,13 @@ void loop()
     else if(pastVoltage>voltage)
     {
         consistencyCounter = 0;
-        standbyLights();
+        // standbyLights();
     }
 
-    if(consistencyCounter > consistencyCounterLimit)
-    {
-        chargingLights();
-    }
-    // strip.setPixelColor(1, strip.Color(0, 0, 255));
-    // strip.setPixelColor(0, strip.Color(0, 255, 0));
-    // strip.setPixelColor(23, strip.Color(255, 0, 0));
-    // strip.show();
+    // if(consistencyCounter > consistencyCounterLimit)
+    // {
+    //     chargingLights();
+    // }
 
     if(screenOn)
     {
@@ -267,44 +267,30 @@ void printBatteryIcon(double percentage)
     }
 }
 
-void standbyLights()
+void fadingLights()
+{
+    if(fadeValue == MAX_FADE_VALUE)
+    {
+        fadeAdder = -1;
+    }else if(fadeValue == 0){
+        fadeAdder = 1;
+    }
+    setAllLights(strip.Color(0,0,255*fadeValue/MAX_FADE_VALUE));
+    fadeValue += fadeAdder;
+}
+
+void setAllLights(uint32_t stripColor)
 {
     for (int i = 0; i < 24; i++)
     {
-        strip.setPixelColor(i, strip.Color(0, 0, 0));
+        strip.setPixelColor(i, stripColor);
     }
     strip.show();
 }
 
-void chargingLights()
+void standbyLights()
 {
-    if(lastLedChangeTime < (long)millis() - ledAnimationDelay)
-    {
-        lastLedChangeTime = (long)millis();
-        double value = chargingLedValue/MAX_LED_VALUE;
-        if(chargingLedValue > MAX_LED_VALUE)
-        {
-            ledValIncreasing = false;
-        }
-        else if(chargingLedValue < 0)
-        {
-            chargingLedValue = 0;
-            ledValIncreasing = true;
-        }
-        
-        for (int i = 0; i < 24; i++)
-        {
-            strip.setPixelColor(i, strip.Color(0,0,255*value));
-        }
-        strip.show();
-        
-        if(ledValIncreasing)
-        {
-            chargingLedValue++;
-        }else{
-            chargingLedValue--;
-        }
-    }
+    setAllLights(strip.Color(0, 0, 0));
 }
 
 void printData(char * str)
