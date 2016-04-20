@@ -34,14 +34,15 @@ module inner_barrier()
                 offset=[35,0,0]
             );
             translate([15,0,-10]) cube(size=[10,40,10],center=true);
-            //translate([0,-33,-10]) cube(size=[40,10,50],center=true);
+            translate([15,0,10]) cube(size=[10,40,10],center=true);
+            translate([0,-33,-10]) cube(size=[40,10,50],center=true)
             translate([0,0,-16])cube([35,69,5],center=true);
         }
         
         // The Rod
         translate([-30,0,0])union()
         {
-            translate([0,0,3])cylinder(h=13,r=3,center=true);
+            translate([0,0,3])cylinder(h=10,r=3,center=true);
             translate([-2,0,-10])cube([10,10,15],center=true);
         }
         
@@ -49,6 +50,22 @@ module inner_barrier()
         translate([-30,0,-20])cylinder(h=10,r=3,center=true);
         translate([28.7,21.5,-20])cylinder(h=10,r=2,center=true);
         translate([28.7,-21.5,-20])cylinder(h=10,r=2,center=true);
+        
+        // The mounting bracket for the push button rotary encoder
+        difference()
+        {
+            translate([30,0,-2.5]) 
+            difference()
+            {
+                cube(size=[40,40,3],center=true);
+                cylinder(h=10,r=3.5,center=true);
+            }
+            difference()
+            {
+                cylinder(h = 20, r = 60, center = true);
+                cylinder(h = 20, r = 38, center = true);
+            }
+        }
     }
 };
 
