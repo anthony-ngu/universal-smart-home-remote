@@ -65,6 +65,12 @@ module inner_barrier()
                 cylinder(h = 20, r = 60, center = true);
                 cylinder(h = 20, r = 38, center = true);
             }
+            semi_circle(
+                height=30,
+                outer_radius=35,
+                inner_radius=24,
+                offset=[35,0,0]
+            );
         }
     }
 };
