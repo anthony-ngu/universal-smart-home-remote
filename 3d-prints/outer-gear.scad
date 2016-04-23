@@ -1,5 +1,7 @@
 include<gear.scad>
 
+// 2.5 & 14
+
 // Gear Portion
 union()
 {   
@@ -13,8 +15,8 @@ union()
     // bottom ring
     difference()
     {
-        translate([0,0,-10])cylinder(h = 10, r = 50, center = true);
-        translate([0,0,-10])cylinder(h = 10, r = 48, center = true);
+        translate([0,0,-17])cylinder(h = 24, r = 50, center = true);
+        translate([0,0,-17])cylinder(h = 24, r = 48, center = true);
     }
     
     // the middle gear portion
