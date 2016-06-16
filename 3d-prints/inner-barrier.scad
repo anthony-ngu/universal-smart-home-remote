@@ -39,14 +39,14 @@ module inner_barrier()
             translate([0,0,-16])cube([35,69,5],center=true);
         }
         
-        // The Rod
+        // The upper connector rod
         translate([-30,0,0])union()
         {
-            translate([0,0,3])cylinder(h=10,r=3,center=true);
+            translate([0,0,2])cylinder(h=10,r=3,center=true);
             translate([-2,0,-10])cube([10,10,15],center=true);
         }
         
-        // The connector rods
+        // The bottom connector rods
         translate([-30,0,-20])cylinder(h=10,r=3,center=true);
         translate([28.7,21.5,-20])cylinder(h=10,r=2,center=true);
         translate([28.7,-21.5,-20])cylinder(h=10,r=2,center=true);
@@ -54,11 +54,12 @@ module inner_barrier()
         // The mounting bracket for the push button rotary encoder
         difference()
         {
+            // The hole for the rotary encoder
             translate([30,0,-2.5]) 
             difference()
             {
                 cube(size=[40,40,3],center=true);
-                cylinder(h=10,r=3.5,center=true);
+                translate([3,0,0])cylinder(h=10,r=3.5,center=true);
             }
             difference()
             {
